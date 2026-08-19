@@ -11,7 +11,7 @@ const NAV = [
   { href: "/stok/tambah", label: "Tambah Barang", icon: PackagePlus },
 ];
 
-export default function Sidebar({ email }: { email: string }) {
+export default function Sidebar({ username }: { username: string }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -63,9 +63,9 @@ export default function Sidebar({ email }: { email: string }) {
       <div className="divider-barcode text-paper mx-6" />
 
       <div className="px-4 py-4">
-        {email && (
-          <div className="px-3 mb-2 text-xs text-wheat/60 truncate" title={email}>
-            {email}
+        {username && (
+          <div className="px-3 mb-2 text-xs text-wheat/60 truncate" title={username}>
+            {username}
           </div>
         )}
         <button

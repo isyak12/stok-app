@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { usernameKeEmail } from "@/lib/username";
 import { Lock } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [memuat, setMemuat] = useState(false);
@@ -19,14 +20,14 @@ export default function LoginPage() {
 
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: usernameKeEmail(username),
       password,
     });
 
     if (error) {
       setError(
         error.message === "Invalid login credentials"
-          ? "Email atau kata sandi salah."
+          ? "Username atau kata sandi salah."
           : error.message
       );
       setMemuat(false);
@@ -64,15 +65,17 @@ export default function LoginPage() {
 
           <label className="block mb-4">
             <span className="text-[11px] uppercase tracking-wider text-ink/50 block mb-1.5">
-              Email
+              Username
             </span>
             <input
-              type="email"
+              type="text"
               required
               autoFocus
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="nama@perusahaan.com"
+              autoCapitalize="none"
+              autoCorrect="off"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="superadmin"
               className="input"
             />
           </label>
