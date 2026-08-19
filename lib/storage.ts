@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "./supabase/client";
-import { Barang, BarangInput } from "./types";
+import { Barang, BarangInput, TipeTransaksi, TransaksiStok } from "./types";
 
 const supabase = createClient();
 
@@ -185,4 +185,79 @@ export function useStok() {
   );
 
   return { data, siap, error, tambah, perbarui, hapus, cariById, muatUlang };
+}
+
+// Bentuk baris tabel transaksi_stok dari Supabase
+type BarisTransaksiStok = {
+  id: string;
+  produk_id: string;
+  tipe: TipeTransaksi;
+  jumlah: number;
+  catatan: string | null;
+  dibuat_pada: string;
+};
+
+function keTransaksiStok(baris: BarisTransaksiStok): TransaksiStok {
+  return {
+    id: baris.id,
+    produkId: baris.produk_id,
+    tipe: baris.tipe,
+    jumlah: baris.jumlah,
+    catatan: baris.catatan,
+    dibuatPada: baris.dibuat_pada,
+  };
+}
+
+/**
+ * Hook untuk membaca riwayat transaksi stok satu produk dan mencatat
+ * transaksi baru (stok masuk/keluar) lewat Postgres function
+ * `catat_transaksi_stok`.
+ */
+export function useTransaksiStok(produkId: string) {
+  const [data, setData] = useState<TransaksiStok[]>([]);
+  const [siap, setSiap] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const muatUlang = useCallback(async () => {
+    const { data: baris, error } = await supabase
+      .from("transaksi_stok")
+      .select("id, produk_id, tipe, jumlah, catatan, dibuat_pada")
+      .eq("produk_id", produkId)
+      .order("dibuat_pada", { ascending: false });
+
+    if (error) {
+      setError(error.message);
+      setSiap(true);
+      return;
+    }
+    setError(null);
+    setData(((baris ?? []) as BarisTransaksiStok[]).map(keTransaksiStok));
+    setSiap(true);
+  }, [produkId]);
+
+  useEffect(() => {
+    muatUlang();
+  }, [muatUlang]);
+
+  const catat = useCallback(
+    async (tipe: TipeTransaksi, jumlah: number, catatan?: string) => {
+      const { error } = await supabase.rpc("catat_transaksi_stok", {
+        p_produk_id: produkId,
+        p_tipe: tipe,
+        p_jumlah: jumlah,
+        p_catatan: catatan?.trim() ? catatan.trim() : null,
+      });
+
+      if (error) {
+        // Tidak setError di sini: pesan error ditampilkan langsung di
+        // form (lihat TransaksiStokForm) supaya tidak muncul dobel.
+        throw error;
+      }
+
+      await muatUlang();
+    },
+    [produkId, muatUlang],
+  );
+
+  return { data, siap, error, catat, muatUlang };
 }

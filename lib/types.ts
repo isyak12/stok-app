@@ -13,3 +13,14 @@ export type Barang = {
 };
 
 export type BarangInput = Omit<Barang, "id" | "diperbaruiPada">;
+
+export type TipeTransaksi = "masuk" | "keluar";
+
+export type TransaksiStok = {
+  id: string;
+  produkId: string;
+  tipe: TipeTransaksi;
+  jumlah: number;
+  catatan: string | null;
+  dibuatPada: string; // ISO date string
+};
