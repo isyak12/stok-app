@@ -21,11 +21,11 @@ type BarisProduk = {
     stok_minimum: number;
     lokasi: string;
     diperbarui_pada: string;
-  }[];
+  } | null; // <- bukan array lagi, tapi object atau null
 };
 
 function keBarang(baris: BarisProduk): Barang {
-  const stok = baris.stok?.[0];
+  const stok = baris.stok; // <- hapus ?.[0]
   return {
     id: baris.id,
     sku: baris.sku,
@@ -107,7 +107,7 @@ export function useStok() {
 
       await muatUlang();
     },
-    [muatUlang]
+    [muatUlang],
   );
 
   const perbarui = useCallback(
@@ -166,7 +166,7 @@ export function useStok() {
 
       await muatUlang();
     },
-    [muatUlang]
+    [muatUlang],
   );
 
   const hapus = useCallback(async (id: string) => {
@@ -181,7 +181,7 @@ export function useStok() {
 
   const cariById = useCallback(
     (id: string) => data.find((b) => b.id === id),
-    [data]
+    [data],
   );
 
   return { data, siap, error, tambah, perbarui, hapus, cariById, muatUlang };
