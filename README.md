@@ -8,6 +8,7 @@ Aplikasi manajemen stok barang berbasis Next.js (App Router), TypeScript, dan Ta
 - **Daftar Stok**: tabel semua barang dengan pencarian (nama/SKU) dan filter kategori.
 - **Tambah Barang**: form untuk mencatat barang baru (SKU, kategori, jumlah, satuan, stok minimum, harga beli/jual, lokasi).
 - **Ubah / Hapus Barang**: edit detail barang atau hapus dari daftar.
+- **Login**: hanya user yang terdaftar yang bisa membuka dan mengubah data (Supabase Auth, email + kata sandi).
 - Data disimpan di **Supabase** (PostgreSQL), lewat dua tabel: `produk` (data master barang) dan `stok` (jumlah & lokasi persediaan).
 
 ## Setup Supabase
@@ -23,7 +24,19 @@ Aplikasi manajemen stok barang berbasis Next.js (App Router), TypeScript, dan Ta
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
    ```
 
-> **Catatan keamanan**: policy RLS di `schema.sql` mengizinkan semua akses baca/tulis lewat anon key, supaya mudah dipakai untuk mulai/prototipe. Sebelum dipakai produksi (apalagi kalau nanti multi-user), tambahkan autentikasi dan ganti policy `using (true)` dengan pengecekan `auth.uid()`.
+## Setup Login (Supabase Auth)
+
+Aplikasi ini **tidak punya halaman daftar akun sendiri** — akun dibuat manual oleh admin lewat dashboard Supabase, supaya tidak sembarang orang bisa mendaftar.
+
+1. Di dashboard Supabase, buka **Authentication > Users** → klik **Add user** → **Create new user**.
+2. Isi email dan kata sandi untuk user pertama (misalnya kamu sendiri), lalu centang **Auto Confirm User** supaya tidak perlu verifikasi email.
+3. Buka **Authentication > Sign In / Providers > Email**, matikan opsi **Allow new users to sign up** — supaya orang lain tidak bisa mendaftar sendiri lewat aplikasi.
+4. Kembali ke **SQL Editor**, jalankan `supabase/auth-policies.sql` untuk memperketat akses tabel `produk` dan `stok` — hanya user yang login yang bisa membaca/mengubah data.
+5. Jalankan `npm install` (menambahkan paket `@supabase/ssr`), lalu `npm run dev`. Buka `http://localhost:3000` — akan otomatis diarahkan ke `/login`.
+
+Untuk menambah user baru (misalnya rekan kerja), ulangi langkah 1–2 di atas kapan saja lewat dashboard Supabase.
+
+> **Catatan**: sebelum menjalankan `auth-policies.sql`, akses tabel masih terbuka lewat anon key (policy dari `schema.sql`). Wajar untuk tahap awal, tapi pastikan dijalankan sebelum aplikasi dipakai sungguhan.
 
 ## Menjalankan secara lokal
 
@@ -44,28 +57,33 @@ Saat deploy, tambahkan `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON
 
 ```
 app/
-  page.tsx              → Dasbor
-  stok/page.tsx          → Daftar stok
-  stok/tambah/page.tsx  → Form tambah barang
-  stok/[id]/page.tsx     → Form ubah barang
-  layout.tsx             → Layout + sidebar
-  globals.css            → Style global & token warna/font
+  login/page.tsx              → Halaman login
+  (dashboard)/layout.tsx       → Layout + sidebar (cek login di server)
+  (dashboard)/page.tsx         → Dasbor
+  (dashboard)/stok/page.tsx    → Daftar stok
+  (dashboard)/stok/tambah/page.tsx  → Form tambah barang
+  (dashboard)/stok/[id]/page.tsx    → Form ubah barang
+  layout.tsx                   → Layout root (minimal)
+  globals.css                  → Style global & token warna/font
+middleware.ts                  → Refresh sesi login & redirect ke /login
 components/
-  Sidebar.tsx
+  Sidebar.tsx   → Navigasi + info user + tombol keluar
   StokTable.tsx
   StokForm.tsx
   StatCard.tsx
 lib/
-  types.ts     → Tipe data Barang (gabungan produk + stok untuk UI)
-  supabase.ts  → Klien Supabase
-  storage.ts   → Hook useStok() — baca/tulis ke Supabase
+  types.ts            → Tipe data Barang (gabungan produk + stok untuk UI)
+  supabase/client.ts  → Klien Supabase untuk client component
+  supabase/server.ts  → Klien Supabase untuk server component
+  storage.ts          → Hook useStok() — baca/tulis ke Supabase
 supabase/
-  schema.sql   → Definisi tabel produk & stok + RLS
-  seed.sql     → Data contoh (opsional)
+  schema.sql        → Definisi tabel produk & stok + RLS awal
+  auth-policies.sql → Perketat RLS supaya wajib login
+  seed.sql          → Data contoh (opsional)
 ```
 
 ## Langkah lanjutan yang mungkin berguna
 
-- Tambah autentikasi (mis. Supabase Auth) bila stok perlu dibatasi per pengguna/toko, lalu perketat policy RLS.
 - Tambah tabel `mutasi_stok` untuk mencatat riwayat barang masuk/keluar bila perlu jejak audit.
 - Aktifkan Supabase Realtime pada tabel `stok` bila ingin Dasbor/Daftar Stok update otomatis tanpa refresh saat diubah dari perangkat lain.
+- Tambah peran (role) pengguna (mis. admin vs staf gudang) bila nanti aksesnya perlu dibedakan per orang.

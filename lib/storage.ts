@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "./supabase";
+import { createClient } from "./supabase/client";
 import { Barang, BarangInput } from "./types";
+
+const supabase = createClient();
 
 // Bentuk baris hasil join produk + stok dari Supabase
 type BarisProduk = {

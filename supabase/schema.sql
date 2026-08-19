@@ -49,8 +49,8 @@ for each row execute function set_diperbarui_pada();
 -- ============================================================
 -- Supabase mewajibkan RLS. Policy di bawah ini mengizinkan semua
 -- operasi (baca/tulis) memakai anon key, cocok untuk memulai/prototipe.
--- SEBELUM PRODUKSI: ganti "using (true)" dengan pengecekan auth.uid(),
--- misalnya membatasi hanya user yang login yang boleh mengubah data.
+-- SUDAH MENAMBAHKAN LOGIN? Jalankan supabase/auth-policies.sql setelah
+-- ini untuk memperketat akses hanya untuk user yang sudah masuk.
 
 alter table produk enable row level security;
 alter table stok enable row level security;

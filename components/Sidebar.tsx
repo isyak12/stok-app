@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { LayoutGrid, Boxes, PackagePlus } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { LayoutGrid, Boxes, PackagePlus, LogOut } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 const NAV = [
   { href: "/", label: "Dasbor", icon: LayoutGrid },
@@ -10,8 +11,16 @@ const NAV = [
   { href: "/stok/tambah", label: "Tambah Barang", icon: PackagePlus },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ email }: { email: string }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function keluar() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <aside className="w-64 shrink-0 bg-ink text-paper flex flex-col relative">
@@ -51,8 +60,25 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="px-6 py-5 text-[11px] text-wheat/50 font-mono">
-        v1.0 — lokal &amp; tanpa server
+      <div className="divider-barcode text-paper mx-6" />
+
+      <div className="px-4 py-4">
+        {email && (
+          <div className="px-3 mb-2 text-xs text-wheat/60 truncate" title={email}>
+            {email}
+          </div>
+        )}
+        <button
+          onClick={keluar}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm text-wheat/70 hover:text-paper hover:bg-white/5 transition-colors"
+        >
+          <LogOut size={17} strokeWidth={1.75} />
+          Keluar
+        </button>
+      </div>
+
+      <div className="px-6 py-4 text-[11px] text-wheat/50 font-mono border-t border-white/5">
+        v1.1 — Supabase
       </div>
     </aside>
   );
