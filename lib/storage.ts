@@ -112,7 +112,7 @@ export function useStok() {
 
   const perbarui = useCallback(
     async (id: string, input: BarangInput) => {
-      const { error: errProduk } = await supabase
+      const { data: produkTerupdate, error: errProduk } = await supabase
         .from("produk")
         .update({
           sku: input.sku,
@@ -122,25 +122,46 @@ export function useStok() {
           harga_beli: input.hargaBeli,
           harga_jual: input.hargaJual,
         })
-        .eq("id", id);
+        .eq("id", id)
+        .select("id");
 
       if (errProduk) {
         setError(errProduk.message);
         throw errProduk;
       }
+      if (!produkTerupdate || produkTerupdate.length === 0) {
+        const pesan =
+          "Barang tidak ditemukan atau Anda tidak punya izin mengubahnya (cek RLS policy di Supabase).";
+        setError(pesan);
+        throw new Error(pesan);
+      }
 
-      const { error: errStok } = await supabase
+      const { data: stokTerupdate, error: errStok } = await supabase
         .from("stok")
         .update({
           jumlah: input.jumlah,
           stok_minimum: input.stokMinimum,
           lokasi: input.lokasi,
         })
-        .eq("produk_id", id);
+        .eq("produk_id", id)
+        .select("id");
 
       if (errStok) {
         setError(errStok.message);
         throw errStok;
+      }
+      if (!stokTerupdate || stokTerupdate.length === 0) {
+        // Baris stok belum ada untuk produk ini (mis. data lama/tidak konsisten) — buat baru.
+        const { error: errInsertStok } = await supabase.from("stok").insert({
+          produk_id: id,
+          jumlah: input.jumlah,
+          stok_minimum: input.stokMinimum,
+          lokasi: input.lokasi,
+        });
+        if (errInsertStok) {
+          setError(errInsertStok.message);
+          throw errInsertStok;
+        }
       }
 
       await muatUlang();
