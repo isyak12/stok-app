@@ -28,11 +28,13 @@ type BarisProduk = {
     lokasi: string;
     cabang_id: string;
     diperbarui_pada: string;
-  } | null;
+  }[];
 };
 
 function keBarang(baris: BarisProduk): Barang {
-  const stok = baris.stok;
+  const semuaStok = baris.stok ?? [];
+  const totalJumlah = semuaStok.reduce((sum, s) => sum + s.jumlah, 0);
+  const stokUtama = semuaStok[0]; // dipakai untuk stokMinimum, lokasi, cabangId default
   return {
     id: baris.id,
     sku: baris.sku,
@@ -41,11 +43,11 @@ function keBarang(baris: BarisProduk): Barang {
     satuan: baris.satuan,
     hargaBeli: Number(baris.harga_beli),
     hargaJual: Number(baris.harga_jual),
-    jumlah: stok?.jumlah ?? 0,
-    stokMinimum: stok?.stok_minimum ?? 0,
-    lokasi: stok?.lokasi ?? "",
-    cabangId: stok?.cabang_id ?? "",
-    diperbaruiPada: stok?.diperbarui_pada ?? baris.dibuat_pada,
+    jumlah: totalJumlah,
+    stokMinimum: stokUtama?.stok_minimum ?? 0,
+    lokasi: stokUtama?.lokasi ?? "",
+    cabangId: stokUtama?.cabang_id ?? "",
+    diperbaruiPada: stokUtama?.diperbarui_pada ?? baris.dibuat_pada,
   };
 }
 
