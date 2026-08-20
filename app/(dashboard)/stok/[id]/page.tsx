@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, ArrowRightLeft } from "lucide-react";
 import { useStok } from "@/lib/storage";
 import StokForm from "@/components/StokForm";
 import { useParams, useRouter } from "next/navigation";
@@ -23,13 +23,22 @@ export default function EditStokPage() {
           <h1 className="font-display text-3xl font-semibold">Ubah Barang</h1>
         </div>
         {barang && (
-          <Link
-            href={`/stok/${barang.id}/transaksi`}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 border border-ink/15 text-sm rounded-sm hover:bg-white transition-colors whitespace-nowrap"
-          >
-            <ArrowLeftRight size={15} />
-            Transaksi Stok
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href={`/stok/${barang.id}/transaksi`}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 border border-ink/15 text-sm rounded-sm hover:bg-white transition-colors whitespace-nowrap"
+            >
+              <ArrowLeftRight size={15} />
+              Transaksi Stok
+            </Link>
+            <Link
+              href={`/stok/${barang.id}/transfer`}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 border border-ink/15 text-sm rounded-sm hover:bg-white transition-colors whitespace-nowrap"
+            >
+              <ArrowRightLeft size={15} />
+              Transfer Stok
+            </Link>
+          </div>
         )}
       </div>
 

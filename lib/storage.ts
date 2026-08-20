@@ -9,6 +9,7 @@ import {
   StokCabangValues,
   TipeTransaksi,
   TransaksiStok,
+  TransferStok,
 } from "./types";
 
 const supabase = createClient();
@@ -380,4 +381,91 @@ export function useCabang() {
   }, []);
 
   return { data, siap };
+}
+
+// Bentuk baris tabel transfer_stok dari Supabase
+type BarisTransferStok = {
+  id: string;
+  produk_id: string;
+  dari_cabang_id: string;
+  ke_cabang_id: string;
+  jumlah: number;
+  catatan: string | null;
+  dibuat_pada: string;
+};
+
+function keTransferStok(baris: BarisTransferStok): TransferStok {
+  return {
+    id: baris.id,
+    produkId: baris.produk_id,
+    dariCabangId: baris.dari_cabang_id,
+    keCabangId: baris.ke_cabang_id,
+    jumlah: baris.jumlah,
+    catatan: baris.catatan,
+    dibuatPada: baris.dibuat_pada,
+  };
+}
+
+/**
+ * Hook untuk membaca riwayat transfer stok satu produk dan mencatat
+ * transfer baru (pindah stok antar cabang) lewat Postgres function
+ * `catat_transfer_stok`. Function di sisi database yang menjamin
+ * perpindahan jumlah antar 2 baris stok + pencatatan riwayat
+ * berjalan atomik (lihat supabase/transfer_stok.sql).
+ */
+export function useTransferStok(produkId: string) {
+  const [data, setData] = useState<TransferStok[]>([]);
+  const [siap, setSiap] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const muatUlang = useCallback(async () => {
+    const { data: baris, error } = await supabase
+      .from("transfer_stok")
+      .select(
+        "id, produk_id, dari_cabang_id, ke_cabang_id, jumlah, catatan, dibuat_pada",
+      )
+      .eq("produk_id", produkId)
+      .order("dibuat_pada", { ascending: false });
+
+    if (error) {
+      setError(error.message);
+      setSiap(true);
+      return;
+    }
+    setError(null);
+    setData(((baris ?? []) as BarisTransferStok[]).map(keTransferStok));
+    setSiap(true);
+  }, [produkId]);
+
+  useEffect(() => {
+    muatUlang();
+  }, [muatUlang]);
+
+  const catat = useCallback(
+    async (
+      dariCabangId: string,
+      keCabangId: string,
+      jumlah: number,
+      catatan?: string,
+    ) => {
+      const { error } = await supabase.rpc("catat_transfer_stok", {
+        p_produk_id: produkId,
+        p_dari_cabang_id: dariCabangId,
+        p_ke_cabang_id: keCabangId,
+        p_jumlah: jumlah,
+        p_catatan: catatan?.trim() ? catatan.trim() : null,
+      });
+
+      if (error) {
+        // Tidak setError di sini: pesan error ditampilkan langsung di
+        // form (lihat TransferStokForm) supaya tidak muncul dobel.
+        throw error;
+      }
+
+      await muatUlang();
+    },
+    [produkId, muatUlang],
+  );
+
+  return { data, siap, error, catat, muatUlang };
 }

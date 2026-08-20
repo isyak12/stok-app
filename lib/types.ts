@@ -37,6 +37,16 @@ export type Cabang = {
   kode: string;
 };
 
+export type TransferStok = {
+  id: string;
+  produkId: string;
+  dariCabangId: string;
+  keCabangId: string;
+  jumlah: number;
+  catatan: string | null;
+  dibuatPada: string; // ISO date string
+};
+
 // Nilai stok yang spesifik untuk satu kombinasi produk + cabang.
 // Dipakai form edit saat pengguna berpindah pilihan cabang.
 export type StokCabangValues = {
