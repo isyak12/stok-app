@@ -83,7 +83,8 @@ supabase/
   schema.sql          → Definisi tabel produk & stok + RLS awal
   transaksi_stok.sql  → Tabel transaksi_stok + function catat_transaksi_stok
   migrasi_cabang.sql  → Tabel cabang + kolom stok.cabang_id (wajib, lihat Setup Supabase)
-  auth-policies.sql   → Perketat RLS supaya wajib login
+  transfer_stok.sql   → Tabel transfer_stok (transfer antar cabang; belum dipakai frontend)
+  auth-policies.sql   → Perketat RLS supaya wajib login (produk, stok, transaksi_stok, cabang, transfer_stok)
   seed.sql            → Data contoh (opsional)
 ```
 
