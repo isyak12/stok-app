@@ -93,8 +93,15 @@ export function useStok() {
         throw errProduk ?? new Error("Gagal menambah produk");
       }
 
+      const { data: cabangDefault } = await supabase
+        .from("cabang")
+        .select("id")
+        .eq("kode", "SBY")
+        .single();
+      
       const { error: errStok } = await supabase.from("stok").insert({
         produk_id: produkBaru.id,
+        cabang_id: cabangDefault?.id,
         jumlah: input.jumlah,
         stok_minimum: input.stokMinimum,
         lokasi: input.lokasi,
