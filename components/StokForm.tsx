@@ -89,6 +89,21 @@ export default function StokForm({ awal, onSimpan, judul }: Props) {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.nama.trim() || !form.sku.trim()) return;
+
+    // Atribut HTML min={0} pada <input type="number"> TIDAK mencegah user
+    // mengetik angka negatif secara langsung (hanya membatasi tombol
+    // spinner). Makanya divalidasi manual di sini sebelum data dikirim
+    // ke Supabase.
+    if (
+      form.jumlah < 0 ||
+      form.stokMinimum < 0 ||
+      form.hargaBeli < 0 ||
+      form.hargaJual < 0
+    ) {
+      setError("Jumlah, stok minimum, dan harga tidak boleh bernilai negatif.");
+      return;
+    }
+
     setError(null);
     setMenyimpan(true);
     try {

@@ -140,6 +140,17 @@ export function useStok() {
 
   const perbarui = useCallback(
     async (id: string, input: BarangInput) => {
+      // PENTING: validasi cabangId dilakukan PALING AWAL, sebelum update
+      // apa pun. Sebelumnya validasi ini ada setelah update tabel `produk`,
+      // sehingga kalau cabangId kosong, data produk sudah kadung ter-update
+      // tapi stok tidak — meninggalkan data dalam keadaan tidak konsisten
+      // (partial write).
+      if (!input.cabangId) {
+        const pesan = "Pilih cabang terlebih dahulu.";
+        setError(pesan);
+        throw new Error(pesan);
+      }
+
       const { data: produkTerupdate, error: errProduk } = await supabase
         .from("produk")
         .update({
@@ -160,12 +171,6 @@ export function useStok() {
       if (!produkTerupdate || produkTerupdate.length === 0) {
         const pesan =
           "Barang tidak ditemukan atau Anda tidak punya izin mengubahnya (cek RLS policy di Supabase).";
-        setError(pesan);
-        throw new Error(pesan);
-      }
-
-      if (!input.cabangId) {
-        const pesan = "Pilih cabang terlebih dahulu.";
         setError(pesan);
         throw new Error(pesan);
       }
