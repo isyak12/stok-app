@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "./supabase/client";
-import { Barang, BarangInput, TipeTransaksi, TransaksiStok } from "./types";
+import {
+  Barang,
+  BarangInput,
+  Cabang,
+  TipeTransaksi,
+  TransaksiStok,
+} from "./types";
 
 const supabase = createClient();
 
@@ -20,12 +26,13 @@ type BarisProduk = {
     jumlah: number;
     stok_minimum: number;
     lokasi: string;
+    cabang_id: string;
     diperbarui_pada: string;
-  } | null; // <- bukan array lagi, tapi object atau null
+  } | null;
 };
 
 function keBarang(baris: BarisProduk): Barang {
-  const stok = baris.stok; // <- hapus ?.[0]
+  const stok = baris.stok;
   return {
     id: baris.id,
     sku: baris.sku,
@@ -37,12 +44,13 @@ function keBarang(baris: BarisProduk): Barang {
     jumlah: stok?.jumlah ?? 0,
     stokMinimum: stok?.stok_minimum ?? 0,
     lokasi: stok?.lokasi ?? "",
+    cabangId: stok?.cabang_id ?? "",
     diperbaruiPada: stok?.diperbarui_pada ?? baris.dibuat_pada,
   };
 }
 
 const SELECT_QUERY =
-  "id, sku, nama, kategori, satuan, harga_beli, harga_jual, dibuat_pada, stok(jumlah, stok_minimum, lokasi, diperbarui_pada)";
+  "id, sku, nama, kategori, satuan, harga_beli, harga_jual, dibuat_pada, stok(jumlah, stok_minimum, lokasi, cabang_id, diperbarui_pada)";
 
 /**
  * Hook utama untuk mengakses dan mengubah data stok barang.
@@ -93,15 +101,9 @@ export function useStok() {
         throw errProduk ?? new Error("Gagal menambah produk");
       }
 
-      const { data: cabangDefault } = await supabase
-        .from("cabang")
-        .select("id")
-        .eq("kode", "SBY")
-        .single();
-      
       const { error: errStok } = await supabase.from("stok").insert({
         produk_id: produkBaru.id,
-        cabang_id: cabangDefault?.id,
+        cabang_id: input.cabangId,
         jumlah: input.jumlah,
         stok_minimum: input.stokMinimum,
         lokasi: input.lokasi,
@@ -267,4 +269,25 @@ export function useTransaksiStok(produkId: string) {
   );
 
   return { data, siap, error, catat, muatUlang };
+}
+
+/**
+ * Hook untuk mengambil daftar cabang (dipakai di dropdown form).
+ */
+export function useCabang() {
+  const [data, setData] = useState<Cabang[]>([]);
+  const [siap, setSiap] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from("cabang")
+      .select("id, nama, kode")
+      .order("nama", { ascending: true })
+      .then(({ data }) => {
+        setData(data ?? []);
+        setSiap(true);
+      });
+  }, []);
+
+  return { data, siap };
 }

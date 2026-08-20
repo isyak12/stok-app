@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { BarangInput, Barang } from "@/lib/types";
+import { BarangInput, useCabang, Barang } from "@/lib/types";
 
 type Props = {
   awal?: Barang;
@@ -21,6 +21,7 @@ const KATEGORI_UMUM = [
 
 export default function StokForm({ awal, onSimpan, judul }: Props) {
   const router = useRouter();
+  const { data: daftarCabang, siap: cabangSiap } = useCabang();
   const [menyimpan, setMenyimpan] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<BarangInput>({
@@ -33,6 +34,7 @@ export default function StokForm({ awal, onSimpan, judul }: Props) {
     hargaBeli: awal?.hargaBeli ?? 0,
     hargaJual: awal?.hargaJual ?? 0,
     lokasi: awal?.lokasi ?? "",
+    cabangId: awal?.cabangId ?? "",
   });
 
   function ubah<K extends keyof BarangInput>(kunci: K, nilai: BarangInput[K]) {
@@ -51,7 +53,7 @@ export default function StokForm({ awal, onSimpan, judul }: Props) {
       setError(
         err instanceof Error
           ? err.message
-          : "Gagal menyimpan barang. Coba lagi."
+          : "Gagal menyimpan barang. Coba lagi.",
       );
       setMenyimpan(false);
     }
@@ -89,6 +91,24 @@ export default function StokForm({ awal, onSimpan, judul }: Props) {
           >
             {KATEGORI_UMUM.map((k) => (
               <option key={k}>{k}</option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Cabang">
+          <select
+            required
+            value={form.cabangId}
+            onChange={(e) => ubah("cabangId", e.target.value)}
+            className="input"
+          >
+            <option value="" disabled>
+              {cabangSiap ? "Pilih cabang" : "Memuat..."}
+            </option>
+            {daftarCabang.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nama}
+              </option>
             ))}
           </select>
         </Field>

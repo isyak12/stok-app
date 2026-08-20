@@ -9,6 +9,7 @@ export type Barang = {
   hargaBeli: number;
   hargaJual: number;
   lokasi: string;
+  cabangId: string;
   diperbaruiPada: string; // ISO date string
 };
 
@@ -23,4 +24,10 @@ export type TransaksiStok = {
   jumlah: number;
   catatan: string | null;
   dibuatPada: string; // ISO date string
+};
+
+export type Cabang = {
+  id: string;
+  nama: string;
+  kode: string;
 };
