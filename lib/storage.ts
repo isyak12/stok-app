@@ -252,9 +252,15 @@ export function useTransaksiStok(produkId: string) {
   }, [muatUlang]);
 
   const catat = useCallback(
-    async (tipe: TipeTransaksi, jumlah: number, catatan?: string) => {
+    async (
+      tipe: TipeTransaksi,
+      jumlah: number,
+      cabangId: string,
+      catatan?: string,
+    ) => {
       const { error } = await supabase.rpc("catat_transaksi_stok", {
         p_produk_id: produkId,
+        p_cabang_id: cabangId,
         p_tipe: tipe,
         p_jumlah: jumlah,
         p_catatan: catatan?.trim() ? catatan.trim() : null,

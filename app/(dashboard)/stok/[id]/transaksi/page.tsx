@@ -60,7 +60,7 @@ export default function TransaksiStokPage() {
             Kembali ke "{barang.nama}"
           </Link>
 
-          <TransaksiStokForm onCatat={catat} />
+          <TransaksiStokForm cabangDefaultId={barang.cabangId} onCatat={catat} />
 
           <div>
             <h2 className="font-display text-lg font-semibold mb-3">

@@ -1,31 +1,68 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { TipeTransaksi } from "@/lib/types";
+import { useCabang } from "@/lib/storage";
 
 type Props = {
+  cabangDefaultId?: string;
   onCatat: (
     tipe: TipeTransaksi,
     jumlah: number,
+    cabangId: string,
     catatan?: string,
   ) => Promise<void>;
 };
 
-export default function TransaksiStokForm({ onCatat }: Props) {
+export default function TransaksiStokForm({ cabangDefaultId, onCatat }: Props) {
+  const { data: daftarCabang, siap: cabangSiap } = useCabang();
+  const [cabangId, setCabangId] = useState(cabangDefaultId ?? "");
+
+  useEffect(() => {
+    if (cabangDefaultId) {
+      setCabangId(cabangDefaultId);
+    }
+  }, [cabangDefaultId]);
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <KartuTransaksi tipe="masuk" onCatat={onCatat} />
-      <KartuTransaksi tipe="keluar" onCatat={onCatat} />
+    <div>
+      <label className="block mb-4 max-w-xs">
+        <span className="text-[11px] uppercase tracking-wider text-ink/50 block mb-1.5">
+          Cabang
+        </span>
+        <select
+          value={cabangId}
+          onChange={(e) => setCabangId(e.target.value)}
+          disabled={!cabangSiap}
+          className="input"
+        >
+          <option value="" disabled>
+            {cabangSiap ? "Pilih cabang" : "Memuat..."}
+          </option>
+          {daftarCabang.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nama} ({c.kode})
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <KartuTransaksi tipe="masuk" cabangId={cabangId} onCatat={onCatat} />
+        <KartuTransaksi tipe="keluar" cabangId={cabangId} onCatat={onCatat} />
+      </div>
     </div>
   );
 }
 
 function KartuTransaksi({
   tipe,
+  cabangId,
   onCatat,
 }: {
   tipe: TipeTransaksi;
+  cabangId: string;
   onCatat: Props["onCatat"];
 }) {
   const [jumlah, setJumlah] = useState<number | "">("");
@@ -43,10 +80,14 @@ function KartuTransaksi({
       setError("Jumlah harus lebih besar dari 0.");
       return;
     }
+    if (!cabangId) {
+      setError("Pilih cabang terlebih dahulu.");
+      return;
+    }
     setError(null);
     setMenyimpan(true);
     try {
-      await onCatat(tipe, jumlah, catatan);
+      await onCatat(tipe, jumlah, cabangId, catatan);
       setJumlah("");
       setCatatan("");
     } catch (err) {
