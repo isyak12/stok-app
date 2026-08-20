@@ -1,5 +1,6 @@
 -- ============================================================
--- Data contoh (opsional) — jalankan setelah schema.sql
+-- Data contoh (opsional) — jalankan setelah schema.sql,
+-- transaksi_stok.sql, DAN migrasi_cabang.sql (butuh cabang_id).
 -- Berguna untuk langsung melihat isi Dasbor & Daftar Stok.
 -- ============================================================
 
@@ -13,9 +14,10 @@ with produk_baru as (
     ('PRT-0021', 'Sabun Cuci Piring 800ml', 'Perawatan Rumah', 'botol', 9500, 14000)
   returning id, sku
 )
-insert into stok (produk_id, jumlah, stok_minimum, lokasi)
+insert into stok (produk_id, cabang_id, jumlah, stok_minimum, lokasi)
 select
   p.id,
+  (select id from cabang where kode = 'PUSAT'),
   case p.sku
     when 'ELK-0012' then 42
     when 'ATK-0087' then 8

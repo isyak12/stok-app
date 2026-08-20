@@ -14,7 +14,10 @@ Aplikasi manajemen stok barang berbasis Next.js (App Router), TypeScript, dan Ta
 ## Setup Supabase
 
 1. Buat project baru di [supabase.com](https://supabase.com) (gratis).
-2. Buka **SQL Editor** di dashboard project, lalu jalankan isi `supabase/schema.sql` untuk membuat tabel `produk` dan `stok`.
+2. Buka **SQL Editor** di dashboard project, lalu jalankan berturut-turut (urutan penting, karena saling bergantung):
+   1. `supabase/schema.sql` — membuat tabel `produk` dan `stok`.
+   2. `supabase/transaksi_stok.sql` — membuat tabel `transaksi_stok` dan function pencatatan stok masuk/keluar.
+   3. `supabase/migrasi_cabang.sql` — membuat tabel `cabang`, menambah kolom `cabang_id` di `stok`, dan menyesuaikan function di atas supaya mendukung multi-cabang. **Wajib**, karena aplikasi (dropdown Cabang, form tambah/ubah barang, catat transaksi) tidak akan berfungsi tanpa ini.
 3. (Opsional) Jalankan juga `supabase/seed.sql` untuk mengisi 5 data contoh, biar Dasbor & Daftar Stok langsung terisi.
 4. Buka **Project Settings > API**, salin **Project URL** dan **anon public key**.
 5. Salin `.env.local.example` menjadi `.env.local`, lalu isi dua nilai tersebut:
@@ -77,9 +80,11 @@ lib/
   supabase/server.ts  → Klien Supabase untuk server component
   storage.ts          → Hook useStok() — baca/tulis ke Supabase
 supabase/
-  schema.sql        → Definisi tabel produk & stok + RLS awal
-  auth-policies.sql → Perketat RLS supaya wajib login
-  seed.sql          → Data contoh (opsional)
+  schema.sql          → Definisi tabel produk & stok + RLS awal
+  transaksi_stok.sql  → Tabel transaksi_stok + function catat_transaksi_stok
+  migrasi_cabang.sql  → Tabel cabang + kolom stok.cabang_id (wajib, lihat Setup Supabase)
+  auth-policies.sql   → Perketat RLS supaya wajib login
+  seed.sql            → Data contoh (opsional)
 ```
 
 ## Langkah lanjutan yang mungkin berguna
