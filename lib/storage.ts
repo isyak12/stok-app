@@ -163,6 +163,7 @@ export function useStok() {
         // Baris stok belum ada untuk produk ini (mis. data lama/tidak konsisten) — buat baru.
         const { error: errInsertStok } = await supabase.from("stok").insert({
           produk_id: id,
+          cabang_id: input.cabangId,
           jumlah: input.jumlah,
           stok_minimum: input.stokMinimum,
           lokasi: input.lokasi,
