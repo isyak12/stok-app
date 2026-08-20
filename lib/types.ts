@@ -31,3 +31,11 @@ export type Cabang = {
   nama: string;
   kode: string;
 };
+
+// Nilai stok yang spesifik untuk satu kombinasi produk + cabang.
+// Dipakai form edit saat pengguna berpindah pilihan cabang.
+export type StokCabangValues = {
+  jumlah: number;
+  stokMinimum: number;
+  lokasi: string;
+};

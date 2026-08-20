@@ -1,9 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BarangInput, Barang } from "@/lib/types";
-import { useCabang } from "@/lib/storage";
+import { useCabang, useStokPerCabang } from "@/lib/storage";
 
 type Props = {
   awal?: Barang;
@@ -22,7 +22,13 @@ const KATEGORI_UMUM = [
 
 export default function StokForm({ awal, onSimpan, judul }: Props) {
   const router = useRouter();
+  const modeEdit = Boolean(awal);
   const { data: daftarCabang, siap: cabangSiap } = useCabang();
+  // Stok per-cabang produk ini (kosong kalau mode Tambah, karena belum ada id)
+  const { data: stokPerCabang, siap: stokPerCabangSiap } = useStokPerCabang(
+    awal?.id,
+  );
+
   const [menyimpan, setMenyimpan] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<BarangInput>({
@@ -38,9 +44,47 @@ export default function StokForm({ awal, onSimpan, judul }: Props) {
     cabangId: awal?.cabangId ?? "",
   });
 
+  // Begitu data stok per-cabang produk ini selesai dimuat, pastikan
+  // field jumlah/stokMinimum/lokasi cocok dengan cabang yang lagi
+  // terpilih (bukan angka gabungan semua cabang dari `awal`).
+  useEffect(() => {
+    if (!modeEdit || !stokPerCabangSiap || !form.cabangId) return;
+    const nilai = stokPerCabang[form.cabangId];
+    setForm((f) => ({
+      ...f,
+      jumlah: nilai?.jumlah ?? 0,
+      stokMinimum: nilai?.stokMinimum ?? 0,
+      lokasi: nilai?.lokasi ?? "",
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stokPerCabangSiap]);
+
   function ubah<K extends keyof BarangInput>(kunci: K, nilai: BarangInput[K]) {
     setForm((f) => ({ ...f, [kunci]: nilai }));
   }
+
+  function ubahCabang(cabangIdBaru: string) {
+    if (modeEdit) {
+      // Ganti cabang di mode edit -> muatkan angka stok milik cabang itu
+      const nilai = stokPerCabang[cabangIdBaru];
+      setForm((f) => ({
+        ...f,
+        cabangId: cabangIdBaru,
+        jumlah: nilai?.jumlah ?? 0,
+        stokMinimum: nilai?.stokMinimum ?? 0,
+        lokasi: nilai?.lokasi ?? "",
+      }));
+    } else {
+      // Mode tambah: cuma satu baris stok baru, tidak perlu muat apa pun
+      setForm((f) => ({ ...f, cabangId: cabangIdBaru }));
+    }
+  }
+
+  const produkBelumAdaDiCabangIni =
+    modeEdit &&
+    stokPerCabangSiap &&
+    form.cabangId &&
+    !stokPerCabang[form.cabangId];
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -96,11 +140,11 @@ export default function StokForm({ awal, onSimpan, judul }: Props) {
           </select>
         </Field>
 
-        <Field label="Cabang">
+        <Field label="Cabang" span2>
           <select
             required
             value={form.cabangId}
-            onChange={(e) => ubah("cabangId", e.target.value)}
+            onChange={(e) => ubahCabang(e.target.value)}
             className="input"
           >
             <option value="" disabled>
@@ -112,6 +156,15 @@ export default function StokForm({ awal, onSimpan, judul }: Props) {
               </option>
             ))}
           </select>
+          {modeEdit && (
+            <span className="text-xs text-ink/40 block mt-1.5">
+              {!stokPerCabangSiap
+                ? "Memuat data stok per cabang..."
+                : produkBelumAdaDiCabangIni
+                  ? "Barang ini belum punya stok di cabang ini — akan dibuat baris baru saat disimpan."
+                  : "Jumlah, stok minimum & lokasi di bawah mengikuti cabang yang dipilih."}
+            </span>
+          )}
         </Field>
 
         <Field label="Nama Barang" span2>

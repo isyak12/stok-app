@@ -6,6 +6,7 @@ import {
   Barang,
   BarangInput,
   Cabang,
+  StokCabangValues,
   TipeTransaksi,
   TransaksiStok,
 } from "./types";
@@ -147,6 +148,15 @@ export function useStok() {
         throw new Error(pesan);
       }
 
+      if (!input.cabangId) {
+        const pesan = "Pilih cabang terlebih dahulu.";
+        setError(pesan);
+        throw new Error(pesan);
+      }
+
+      // PENTING: filter juga berdasarkan cabang_id, bukan cuma produk_id.
+      // Tanpa ini, produk yang punya stok di lebih dari satu cabang akan
+      // ketimpa SEMUA cabangnya dengan nilai yang sama saat diedit.
       const { data: stokTerupdate, error: errStok } = await supabase
         .from("stok")
         .update({
@@ -155,6 +165,7 @@ export function useStok() {
           lokasi: input.lokasi,
         })
         .eq("produk_id", id)
+        .eq("cabang_id", input.cabangId)
         .select("id");
 
       if (errStok) {
@@ -162,7 +173,7 @@ export function useStok() {
         throw errStok;
       }
       if (!stokTerupdate || stokTerupdate.length === 0) {
-        // Baris stok belum ada untuk produk ini (mis. data lama/tidak konsisten) — buat baru.
+        // Produk ini belum punya baris stok di cabang yang dipilih — buat baru.
         const { error: errInsertStok } = await supabase.from("stok").insert({
           produk_id: id,
           cabang_id: input.cabangId,
@@ -197,6 +208,61 @@ export function useStok() {
   );
 
   return { data, siap, error, tambah, perbarui, hapus, cariById, muatUlang };
+}
+
+/**
+ * Hook untuk membaca stok satu produk DI SETIAP CABANG (bukan agregat).
+ * Dipakai form edit supaya saat pengguna ganti pilihan cabang, angka
+ * jumlah/stok minimum/lokasi yang tampil sesuai cabang itu — bukan
+ * ikut-ikutan angka cabang lain atau angka gabungan semua cabang.
+ *
+ * Mengembalikan peta: { [cabangId]: { jumlah, stokMinimum, lokasi } }
+ * Produk yang belum punya stok di suatu cabang, cukup tidak ada
+ * entry-nya di peta ini (form akan anggap 0 / kosong).
+ */
+export function useStokPerCabang(produkId?: string) {
+  const [data, setData] = useState<Record<string, StokCabangValues>>({});
+  const [siap, setSiap] = useState(!produkId);
+
+  useEffect(() => {
+    if (!produkId) {
+      setData({});
+      setSiap(true);
+      return;
+    }
+
+    let batal = false;
+    setSiap(false);
+
+    supabase
+      .from("stok")
+      .select("cabang_id, jumlah, stok_minimum, lokasi")
+      .eq("produk_id", produkId)
+      .then(({ data: baris, error }) => {
+        if (batal) return;
+        if (error) {
+          setData({});
+          setSiap(true);
+          return;
+        }
+        const peta: Record<string, StokCabangValues> = {};
+        (baris ?? []).forEach((b) => {
+          peta[b.cabang_id] = {
+            jumlah: b.jumlah,
+            stokMinimum: b.stok_minimum,
+            lokasi: b.lokasi,
+          };
+        });
+        setData(peta);
+        setSiap(true);
+      });
+
+    return () => {
+      batal = true;
+    };
+  }, [produkId]);
+
+  return { data, siap };
 }
 
 // Bentuk baris tabel transaksi_stok dari Supabase
