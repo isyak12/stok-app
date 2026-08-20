@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { BarangInput, useCabang, Barang } from "@/lib/types";
+import { BarangInput, Barang } from "@/lib/types";
+import { useCabang } from "@/lib/storage";
 
 type Props = {
   awal?: Barang;
