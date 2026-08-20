@@ -3,6 +3,15 @@
 -- catat_transaksi_stok untuk mencatat barang masuk/keluar.
 -- Jalankan file ini di Supabase Dashboard > SQL Editor
 -- (setelah schema.sql).
+--
+-- !! PENTING: function catat_transaksi_stok(p_produk_id, p_tipe, ...)
+-- di file ini BELUM mendukung multi-cabang (belum ada p_cabang_id).
+-- Kode aplikasi (lib/storage.ts) SELALU memanggil versi yang punya
+-- p_cabang_id. Jadi file supabase/migrasi_cabang.sql WAJIB dijalankan
+-- setelah file ini — bukan opsional — karena file itu men-drop &
+-- membuat ulang function ini dengan signature yang benar. Kalau
+-- terlewat, RPC dari aplikasi akan gagal (function tidak ditemukan)
+-- atau salah mengambil baris stok saat produk punya banyak cabang.
 -- ============================================================
 
 create table if not exists transaksi_stok (

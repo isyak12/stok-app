@@ -11,9 +11,14 @@ export type Barang = {
   lokasi: string;
   cabangId: string;
   diperbaruiPada: string; // ISO date string
+  // true kalau ADA MINIMAL SATU cabang yang stoknya <= stok minimum
+  // cabang itu sendiri. Dihitung per-baris-stok (bukan dari jumlah
+  // gabungan semua cabang), supaya tidak salah tampil "aman" saat
+  // total gabungan masih besar tapi satu cabang sudah kritis.
+  stokRendah: boolean;
 };
 
-export type BarangInput = Omit<Barang, "id" | "diperbaruiPada">;
+export type BarangInput = Omit<Barang, "id" | "diperbaruiPada" | "stokRendah">;
 
 export type TipeTransaksi = "masuk" | "keluar";
 

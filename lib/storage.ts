@@ -33,9 +33,23 @@ type BarisProduk = {
 };
 
 function keBarang(baris: BarisProduk): Barang {
-  const semuaStok = baris.stok ?? [];
+  // Urutkan dulu berdasarkan cabang_id supaya "cabang default" yang
+  // dipakai di bawah (stokUtama) konsisten setiap kali data dimuat —
+  // sebelumnya dipakai semuaStok[0] apa adanya, padahal urutan baris
+  // nested yang dikembalikan Supabase tidak dijamin sama tiap request.
+  const semuaStok = [...(baris.stok ?? [])].sort((a, b) =>
+    a.cabang_id.localeCompare(b.cabang_id),
+  );
   const totalJumlah = semuaStok.reduce((sum, s) => sum + s.jumlah, 0);
   const stokUtama = semuaStok[0]; // dipakai untuk stokMinimum, lokasi, cabangId default
+
+  // PENTING: stok rendah dicek PER CABANG (jumlah cabang itu <= minimum
+  // cabang itu), bukan totalJumlah (gabungan semua cabang) dibandingkan
+  // stokMinimum satu cabang saja. Kalau dibandingkan pakai total gabungan,
+  // produk dengan banyak cabang bisa terlihat "aman" padahal salah satu
+  // cabangnya sudah kritis, atau sebaliknya salah tampil rendah.
+  const stokRendah = semuaStok.some((s) => s.jumlah <= s.stok_minimum);
+
   return {
     id: baris.id,
     sku: baris.sku,
@@ -49,6 +63,7 @@ function keBarang(baris: BarisProduk): Barang {
     lokasi: stokUtama?.lokasi ?? "",
     cabangId: stokUtama?.cabang_id ?? "",
     diperbaruiPada: stokUtama?.diperbarui_pada ?? baris.dibuat_pada,
+    stokRendah,
   };
 }
 

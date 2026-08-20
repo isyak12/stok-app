@@ -80,7 +80,7 @@ export default function StokTable({ data, onHapus }: Props) {
           </thead>
           <tbody>
             {hasil.map((b) => {
-              const rendah = b.jumlah <= b.stokMinimum;
+              const rendah = b.stokRendah;
               return (
                 <tr
                   key={b.id}
