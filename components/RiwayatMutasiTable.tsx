@@ -37,10 +37,23 @@ function Badge({ mutasi }: { mutasi: MutasiStok }) {
     <span
       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-xs font-medium ${
         masuk ? "bg-moss/10 text-moss" : "bg-rust/10 text-rust"
-      }`}
+      } ${mutasi.dibatalkan ? "line-through decoration-2" : ""}`}
     >
       {masuk ? <ArrowDownToLine size={12} /> : <ArrowUpFromLine size={12} />}
       {masuk ? "Masuk" : "Keluar"}
+    </span>
+  );
+}
+
+// Badge kecil "Dibatalkan" untuk entri transaksi masuk/keluar yang
+// sudah divoid (lihat supabase/pembatalan_transaksi.sql). Tanpa ini,
+// transaksi yang sebetulnya sudah tidak berlaku terlihat sama persis
+// dengan transaksi yang masih aktif di linimasa Riwayat Mutasi.
+function StatusTransaksiBadge({ alasan }: { alasan: string | null }) {
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[11px] font-medium bg-ink/5 text-ink/60">
+      <XCircle size={11} />
+      {alasan ? `Dibatalkan: ${alasan}` : "Dibatalkan"}
     </span>
   );
 }
@@ -92,10 +105,16 @@ export default function RiwayatMutasiTable({ data, daftarCabang }: Props) {
         <tbody>
           {data.map((m) => {
             const tanda = m.jenis === "keluar" ? "-" : "+";
+            const dibatalkan =
+              m.jenis === "transfer"
+                ? m.status === "dibatalkan"
+                : m.dibatalkan;
             return (
               <tr
                 key={`${m.jenis}-${m.id}`}
-                className="border-b border-ink/5 last:border-0 hover:bg-paper/50"
+                className={`border-b border-ink/5 last:border-0 hover:bg-paper/50 ${
+                  dibatalkan ? "opacity-60" : ""
+                }`}
               >
                 <td className="px-4 py-3 text-ink/70 font-mono text-xs whitespace-nowrap">
                   {formatTanggal(m.dibuatPada)}
@@ -106,6 +125,9 @@ export default function RiwayatMutasiTable({ data, daftarCabang }: Props) {
                     {m.jenis === "transfer" && (
                       <StatusTransferBadge status={m.status} />
                     )}
+                    {m.jenis !== "transfer" && m.dibatalkan && (
+                      <StatusTransaksiBadge alasan={m.alasanPembatalan} />
+                    )}
                   </div>
                 </td>
                 <td className="px-4 py-3 text-ink/70 hidden sm:table-cell">
@@ -113,7 +135,11 @@ export default function RiwayatMutasiTable({ data, daftarCabang }: Props) {
                     ? `${namaCabang(m.dariCabangId)} → ${namaCabang(m.keCabangId)}`
                     : namaCabang(m.cabangId)}
                 </td>
-                <td className="px-4 py-3 text-right font-mono">
+                <td
+                  className={`px-4 py-3 text-right font-mono ${
+                    dibatalkan ? "line-through decoration-2" : ""
+                  }`}
+                >
                   {tanda}
                   {m.jumlah}
                 </td>

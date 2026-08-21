@@ -16,6 +16,7 @@ export default function TransaksiStokPage() {
     siap: transaksiSiap,
     error,
     catat,
+    batalkan,
   } = useTransaksiStok(params.id);
   const { data: daftarCabang } = useCabang();
 
@@ -69,6 +70,13 @@ export default function TransaksiStokPage() {
             <h2 className="font-display text-lg font-semibold mb-3">
               Riwayat Transaksi
             </h2>
+            <p className="text-xs text-ink/50 mb-3 max-w-xl">
+              Salah input jumlah atau tipe transaksi? Klik "Batalkan" pada
+              baris terkait — efeknya ke stok akan dikoreksi balik dan
+              tercatat siapa yang membatalkan. Transaksi yang sudah
+              dibatalkan tetap tersimpan di riwayat (bukan dihapus) supaya
+              jejaknya tetap jelas.
+            </p>
             {error && (
               <div className="mb-3 px-4 py-3 bg-rust/10 border border-rust/30 text-rust text-sm rounded-sm">
                 Gagal memuat riwayat transaksi: {error}
@@ -77,7 +85,11 @@ export default function TransaksiStokPage() {
             {!transaksiSiap ? (
               <p className="text-ink/40 text-sm">Memuat riwayat...</p>
             ) : (
-              <TransaksiStokTable data={transaksi} daftarCabang={daftarCabang} />
+              <TransaksiStokTable
+                data={transaksi}
+                daftarCabang={daftarCabang}
+                onBatalkan={batalkan}
+              />
             )}
           </div>
         </div>

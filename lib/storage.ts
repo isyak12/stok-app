@@ -305,6 +305,10 @@ type BarisTransaksiStok = {
   dibuat_oleh_nama: string | null;
   pihak: string | null;
   no_referensi: string | null;
+  dibatalkan: boolean;
+  dibatalkan_oleh_nama: string | null;
+  dibatalkan_pada: string | null;
+  alasan_pembatalan: string | null;
 };
 
 function keTransaksiStok(baris: BarisTransaksiStok): TransaksiStok {
@@ -319,6 +323,10 @@ function keTransaksiStok(baris: BarisTransaksiStok): TransaksiStok {
     dibuatOlehNama: baris.dibuat_oleh_nama,
     pihak: baris.pihak,
     noReferensi: baris.no_referensi,
+    dibatalkan: baris.dibatalkan,
+    dibatalkanOlehNama: baris.dibatalkan_oleh_nama,
+    dibatalkanPada: baris.dibatalkan_pada,
+    alasanPembatalan: baris.alasan_pembatalan,
   };
 }
 
@@ -336,7 +344,7 @@ export function useTransaksiStok(produkId: string) {
     const { data: baris, error } = await supabase
       .from("transaksi_stok")
       .select(
-        "id, produk_id, cabang_id, tipe, jumlah, catatan, dibuat_pada, dibuat_oleh_nama, pihak, no_referensi",
+        "id, produk_id, cabang_id, tipe, jumlah, catatan, dibuat_pada, dibuat_oleh_nama, pihak, no_referensi, dibatalkan, dibatalkan_oleh_nama, dibatalkan_pada, alasan_pembatalan",
       )
       .eq("produk_id", produkId)
       .order("dibuat_pada", { ascending: false });
@@ -385,7 +393,29 @@ export function useTransaksiStok(produkId: string) {
     [produkId, muatUlang],
   );
 
-  return { data, siap, error, catat, muatUlang };
+  // Batalkan (void) transaksi yang salah catat: mengoreksi balik efeknya
+  // ke stok (lihat supabase/pembatalan_transaksi.sql, function
+  // batalkan_transaksi_stok). Baris transaksi tetap ada di riwayat,
+  // hanya ditandai dibatalkan + siapa/kapan/kenapa — bukan dihapus,
+  // supaya jejak audit utuh. Transaksi yang sudah dibatalkan akan
+  // ditolak function di sisi database kalau dicoba dibatalkan lagi.
+  const batalkan = useCallback(
+    async (transaksiId: string, alasan?: string) => {
+      const { error } = await supabase.rpc("batalkan_transaksi_stok", {
+        p_transaksi_id: transaksiId,
+        p_alasan: alasan?.trim() ? alasan.trim() : null,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      await muatUlang();
+    },
+    [muatUlang],
+  );
+
+  return { data, siap, error, catat, batalkan, muatUlang };
 }
 
 /**
@@ -570,6 +600,8 @@ export function useRiwayatMutasi(produkId: string) {
       catatan: t.catatan,
       dibuatPada: t.dibuatPada,
       cabangId: t.cabangId,
+      dibatalkan: t.dibatalkan,
+      alasanPembatalan: t.alasanPembatalan,
     }));
     const dariTransfer: MutasiStok[] = transfer.data.map((t) => ({
       jenis: "transfer",

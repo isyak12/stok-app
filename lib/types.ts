@@ -46,6 +46,10 @@ export type TransaksiStok = {
   dibuatOlehNama: string | null;
   pihak: string | null;
   noReferensi: string | null;
+  dibatalkan: boolean;
+  dibatalkanOlehNama: string | null;
+  dibatalkanPada: string | null; // ISO date string, null kalau tidak dibatalkan
+  alasanPembatalan: string | null;
 };
 
 export type Cabang = {
@@ -94,6 +98,12 @@ export type MutasiStok =
       catatan: string | null;
       dibuatPada: string;
       cabangId: string;
+      // Ditandai true kalau transaksi ini sudah dibatalkan (lihat
+      // supabase/pembatalan_transaksi.sql). Baris tetap ditampilkan
+      // di riwayat (bukan dihapus) supaya jejak audit tetap utuh,
+      // tapi UI menandainya secara visual sebagai tidak berlaku lagi.
+      dibatalkan: boolean;
+      alasanPembatalan: string | null;
     }
   | {
       jenis: "transfer";
