@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeftRight, ArrowRightLeft, History } from "lucide-react";
+import { ArrowLeftRight, ArrowRightLeft, ClipboardCheck, History } from "lucide-react";
 import { useStok } from "@/lib/storage";
 import StokForm from "@/components/StokForm";
 import { useParams, useRouter } from "next/navigation";
@@ -37,6 +37,13 @@ export default function EditStokPage() {
             >
               <ArrowRightLeft size={15} />
               Transfer Stok
+            </Link>
+            <Link
+              href={`/stok/${barang.id}/opname`}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 border border-ink/15 text-sm rounded-sm hover:bg-white transition-colors whitespace-nowrap"
+            >
+              <ClipboardCheck size={15} />
+              Stok Opname
             </Link>
             <Link
               href={`/stok/${barang.id}/riwayat`}
