@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Stokku — Manajemen Stok Barang",
+  title: "Stok - Skynet — Manajemen Stok Barang",
   description: "Aplikasi manajemen stok barang sederhana",
 };
 
