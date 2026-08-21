@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useStok } from "@/lib/storage";
+import { useCabang, useStok } from "@/lib/storage";
 import StatCard from "@/components/StatCard";
 import { TriangleAlert, ArrowRight } from "lucide-react";
 
@@ -15,11 +15,36 @@ function formatRupiah(n: number) {
 
 export default function DasborPage() {
   const { data, siap, error } = useStok();
+  const { data: daftarCabang } = useCabang();
 
   const totalJenis = data.length;
   const totalUnit = data.reduce((a, b) => a + b.jumlah, 0);
   const nilaiStok = data.reduce((a, b) => a + b.jumlah * b.hargaBeli, 0);
   const stokRendah = data.filter((b) => b.stokRendah);
+
+  const namaCabang = (cabangId: string) =>
+    daftarCabang.find((c) => c.id === cabangId)?.nama ?? "—";
+
+  // Satu baris per KOMBINASI barang+cabang yang kritis — bukan satu
+  // baris per barang dengan angka gabungan semua cabang. Produk yang
+  // stoknya ada di banyak cabang dan kritis di lebih dari satu cabang
+  // akan muncul lebih dari sekali di sini, masing-masing dengan
+  // cabang & angkanya sendiri, supaya jelas cabang mana yang perlu
+  // diisi ulang (bukan cuma total gabungan yang membingungkan).
+  const barisKritis = stokRendah.flatMap((b) =>
+    b.stokPerCabang
+      .filter((s) => s.rendah)
+      .map((s) => ({
+        key: `${b.id}-${s.cabangId}`,
+        barangId: b.id,
+        nama: b.nama,
+        sku: b.sku,
+        satuan: b.satuan,
+        cabangNama: namaCabang(s.cabangId),
+        jumlah: s.jumlah,
+        stokMinimum: s.stokMinimum,
+      })),
+  );
 
   return (
     <div className="p-4 sm:p-8 max-w-6xl">
@@ -78,26 +103,29 @@ export default function DasborPage() {
               </Link>
             </div>
 
-            {stokRendah.length === 0 ? (
+            {barisKritis.length === 0 ? (
               <p className="px-5 py-8 text-center text-ink/40 text-sm">
                 Semua stok dalam kondisi aman. Tidak ada barang yang perlu diisi
                 ulang saat ini.
               </p>
             ) : (
               <ul className="divide-y divide-ink/5">
-                {stokRendah.map((b) => (
+                {barisKritis.map((r) => (
                   <li
-                    key={b.id}
+                    key={r.key}
                     className="px-5 py-3 flex items-center justify-between text-sm"
                   >
                     <div>
-                      <span className="font-medium">{b.nama}</span>
+                      <span className="font-medium">{r.nama}</span>
                       <span className="text-ink/40 font-mono text-xs ml-2">
-                        {b.sku}
+                        {r.sku}
+                      </span>
+                      <span className="text-ink/40 text-xs ml-2">
+                        · {r.cabangNama}
                       </span>
                     </div>
                     <div className="font-mono text-rust font-semibold">
-                      {b.jumlah} / {b.stokMinimum} {b.satuan}
+                      {r.jumlah} / {r.stokMinimum} {r.satuan}
                     </div>
                   </li>
                 ))}

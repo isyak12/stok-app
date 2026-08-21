@@ -16,9 +16,22 @@ export type Barang = {
   // gabungan semua cabang), supaya tidak salah tampil "aman" saat
   // total gabungan masih besar tapi satu cabang sudah kritis.
   stokRendah: boolean;
+  // Rincian stok per cabang (bukan gabungan) — dipakai untuk
+  // menunjukkan CABANG MANA yang stoknya kritis, bukan cuma angka
+  // total gabungan yang bisa membingungkan saat produk tersebar
+  // di banyak cabang.
+  stokPerCabang: {
+    cabangId: string;
+    jumlah: number;
+    stokMinimum: number;
+    rendah: boolean;
+  }[];
 };
 
-export type BarangInput = Omit<Barang, "id" | "diperbaruiPada" | "stokRendah">;
+export type BarangInput = Omit<
+  Barang,
+  "id" | "diperbaruiPada" | "stokRendah" | "stokPerCabang"
+>;
 
 export type TipeTransaksi = "masuk" | "keluar";
 

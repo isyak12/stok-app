@@ -66,6 +66,12 @@ function keBarang(baris: BarisProduk): Barang {
     cabangId: stokUtama?.cabang_id ?? "",
     diperbaruiPada: stokUtama?.diperbarui_pada ?? baris.dibuat_pada,
     stokRendah,
+    stokPerCabang: semuaStok.map((s) => ({
+      cabangId: s.cabang_id,
+      jumlah: s.jumlah,
+      stokMinimum: s.stok_minimum,
+      rendah: s.jumlah <= s.stok_minimum,
+    })),
   };
 }
 
