@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { useStok, useTransaksiStok } from "@/lib/storage";
+import { useCabang, useStok, useTransaksiStok } from "@/lib/storage";
 import TransaksiStokForm from "@/components/TransaksiStokForm";
 import TransaksiStokTable from "@/components/TransaksiStokTable";
 
@@ -17,6 +17,7 @@ export default function TransaksiStokPage() {
     error,
     catat,
   } = useTransaksiStok(params.id);
+  const { data: daftarCabang } = useCabang();
 
   const barang = cariById(params.id);
 
@@ -75,7 +76,7 @@ export default function TransaksiStokPage() {
             {!transaksiSiap ? (
               <p className="text-ink/40 text-sm">Memuat riwayat...</p>
             ) : (
-              <TransaksiStokTable data={transaksi} />
+              <TransaksiStokTable data={transaksi} daftarCabang={daftarCabang} />
             )}
           </div>
         </div>

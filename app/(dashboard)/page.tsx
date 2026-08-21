@@ -19,7 +19,7 @@ export default function DasborPage() {
   const totalJenis = data.length;
   const totalUnit = data.reduce((a, b) => a + b.jumlah, 0);
   const nilaiStok = data.reduce((a, b) => a + b.jumlah * b.hargaBeli, 0);
-  const stokRendah = data.filter((b) => b.jumlah <= b.stokMinimum);
+  const stokRendah = data.filter((b) => b.stokRendah);
 
   return (
     <div className="p-4 sm:p-8 max-w-6xl">

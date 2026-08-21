@@ -25,17 +25,11 @@ export type TipeTransaksi = "masuk" | "keluar";
 export type TransaksiStok = {
   id: string;
   produkId: string;
+  cabangId: string;
   tipe: TipeTransaksi;
   jumlah: number;
   catatan: string | null;
   dibuatPada: string; // ISO date string
-  // Snapshot username staf yang mencatat transaksi ini (dari email
-  // internal, sudah diubah pakai emailKeUsername() di layer data).
-  dibuatOlehNama: string | null;
-  // Nama pembeli (transaksi keluar) atau supplier (transaksi masuk).
-  pihak: string | null;
-  // No. nota/invoice/PO terkait, kalau ada.
-  noReferensi: string | null;
 };
 
 export type Cabang = {
@@ -43,8 +37,6 @@ export type Cabang = {
   nama: string;
   kode: string;
 };
-
-export type StatusTransfer = "terkirim" | "diterima";
 
 export type TransferStok = {
   id: string;
@@ -54,10 +46,6 @@ export type TransferStok = {
   jumlah: number;
   catatan: string | null;
   dibuatPada: string; // ISO date string
-  status: StatusTransfer;
-  dibuatOlehNama: string | null;
-  diterimaOlehNama: string | null;
-  diterimaPada: string | null; // ISO date string, null kalau belum diterima
 };
 
 // Nilai stok yang spesifik untuk satu kombinasi produk + cabang.
@@ -80,9 +68,7 @@ export type MutasiStok =
       jumlah: number;
       catatan: string | null;
       dibuatPada: string;
-      dibuatOlehNama: string | null;
-      pihak: string | null;
-      noReferensi: string | null;
+      cabangId: string;
     }
   | {
       jenis: "transfer";
@@ -92,8 +78,4 @@ export type MutasiStok =
       dibuatPada: string;
       dariCabangId: string;
       keCabangId: string;
-      status: StatusTransfer;
-      dibuatOlehNama: string | null;
-      diterimaOlehNama: string | null;
-      diterimaPada: string | null;
     };

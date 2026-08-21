@@ -1,10 +1,11 @@
 "use client";
 
 import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
-import { TransaksiStok } from "@/lib/types";
+import { Cabang, TransaksiStok } from "@/lib/types";
 
 type Props = {
   data: TransaksiStok[];
+  daftarCabang: Cabang[];
 };
 
 function formatTanggal(iso: string) {
@@ -17,22 +18,19 @@ function formatTanggal(iso: string) {
   }).format(new Date(iso));
 }
 
-export default function TransaksiStokTable({ data }: Props) {
+export default function TransaksiStokTable({ data, daftarCabang }: Props) {
+  const namaCabang = (cabangId: string) =>
+    daftarCabang.find((c) => c.id === cabangId)?.nama ?? "—";
+
   return (
-    <div className="bg-white border border-ink/10 rounded-sm overflow-x-auto">
-      <table className="w-full min-w-[720px] text-sm">
+    <div className="bg-white border border-ink/10 rounded-sm overflow-hidden">
+      <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-[11px] uppercase tracking-wider text-ink/50 border-b border-ink/10 bg-paper/60">
             <th className="px-4 py-3 font-medium">Tanggal</th>
             <th className="px-4 py-3 font-medium">Tipe</th>
+            <th className="px-4 py-3 font-medium">Cabang</th>
             <th className="px-4 py-3 font-medium text-right">Jumlah</th>
-            <th className="px-4 py-3 font-medium">Pihak</th>
-            <th className="px-4 py-3 font-medium hidden sm:table-cell">
-              No. Referensi
-            </th>
-            <th className="px-4 py-3 font-medium hidden md:table-cell">
-              Dicatat oleh
-            </th>
             <th className="px-4 py-3 font-medium">Catatan</th>
           </tr>
         </thead>
@@ -63,18 +61,12 @@ export default function TransaksiStokTable({ data }: Props) {
                     {masuk ? "Masuk" : "Keluar"}
                   </span>
                 </td>
+                <td className="px-4 py-3 text-ink/70">
+                  {namaCabang(t.cabangId)}
+                </td>
                 <td className="px-4 py-3 text-right font-mono">
                   {masuk ? "+" : "-"}
                   {t.jumlah}
-                </td>
-                <td className="px-4 py-3 text-ink/70">
-                  {t.pihak || <span className="text-ink/30">—</span>}
-                </td>
-                <td className="px-4 py-3 text-ink/70 font-mono text-xs hidden sm:table-cell">
-                  {t.noReferensi || <span className="text-ink/30">—</span>}
-                </td>
-                <td className="px-4 py-3 text-ink/70 hidden md:table-cell">
-                  {t.dibuatOlehNama || <span className="text-ink/30">—</span>}
                 </td>
                 <td className="px-4 py-3 text-ink/70">
                   {t.catatan || <span className="text-ink/30">—</span>}
@@ -85,7 +77,7 @@ export default function TransaksiStokTable({ data }: Props) {
           {data.length === 0 && (
             <tr>
               <td
-                colSpan={7}
+                colSpan={5}
                 className="px-4 py-10 text-center text-ink/40 text-sm"
               >
                 Belum ada transaksi stok untuk barang ini.
