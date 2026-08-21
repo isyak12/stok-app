@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "./supabase/client";
 import {
   Barang,
   BarangInput,
   Cabang,
+  MutasiStok,
   StokCabangValues,
   TipeTransaksi,
   TransaksiStok,
@@ -473,4 +474,47 @@ export function useTransferStok(produkId: string) {
   );
 
   return { data, siap, error, catat, muatUlang };
+}
+
+/**
+ * Hook untuk halaman "Riwayat Mutasi" per barang: menggabungkan
+ * riwayat transaksi stok (masuk/keluar) dan transfer stok (antar
+ * cabang) jadi satu linimasa terurut dari yang terbaru, supaya
+ * pengguna tidak perlu buka dua halaman terpisah untuk lihat semua
+ * pergerakan stok satu barang.
+ */
+export function useRiwayatMutasi(produkId: string) {
+  const transaksi = useTransaksiStok(produkId);
+  const transfer = useTransferStok(produkId);
+  const cabang = useCabang();
+
+  const data = useMemo<MutasiStok[]>(() => {
+    const dariTransaksi: MutasiStok[] = transaksi.data.map((t) => ({
+      jenis: t.tipe,
+      id: t.id,
+      jumlah: t.jumlah,
+      catatan: t.catatan,
+      dibuatPada: t.dibuatPada,
+    }));
+    const dariTransfer: MutasiStok[] = transfer.data.map((t) => ({
+      jenis: "transfer",
+      id: t.id,
+      jumlah: t.jumlah,
+      catatan: t.catatan,
+      dibuatPada: t.dibuatPada,
+      dariCabangId: t.dariCabangId,
+      keCabangId: t.keCabangId,
+    }));
+    return [...dariTransaksi, ...dariTransfer].sort(
+      (a, b) =>
+        new Date(b.dibuatPada).getTime() - new Date(a.dibuatPada).getTime(),
+    );
+  }, [transaksi.data, transfer.data]);
+
+  return {
+    data,
+    daftarCabang: cabang.data,
+    siap: transaksi.siap && transfer.siap && cabang.siap,
+    error: transaksi.error ?? transfer.error,
+  };
 }

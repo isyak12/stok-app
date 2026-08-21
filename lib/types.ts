@@ -54,3 +54,26 @@ export type StokCabangValues = {
   stokMinimum: number;
   lokasi: string;
 };
+
+// Satu baris riwayat mutasi stok gabungan (dipakai halaman
+// "Riwayat Mutasi" per barang). Menyatukan dua sumber data yang
+// aslinya terpisah — transaksi_stok (masuk/keluar) dan transfer_stok
+// (antar cabang) — supaya bisa ditampilkan sebagai satu linimasa
+// terurut berdasarkan tanggal.
+export type MutasiStok =
+  | {
+      jenis: "masuk" | "keluar";
+      id: string;
+      jumlah: number;
+      catatan: string | null;
+      dibuatPada: string;
+    }
+  | {
+      jenis: "transfer";
+      id: string;
+      jumlah: number;
+      catatan: string | null;
+      dibuatPada: string;
+      dariCabangId: string;
+      keCabangId: string;
+    };
