@@ -43,6 +43,9 @@ export type TransaksiStok = {
   jumlah: number;
   catatan: string | null;
   dibuatPada: string; // ISO date string
+  dibuatOlehNama: string | null;
+  pihak: string | null;
+  noReferensi: string | null;
 };
 
 export type Cabang = {
@@ -50,6 +53,8 @@ export type Cabang = {
   nama: string;
   kode: string;
 };
+
+export type StatusTransfer = "terkirim" | "diterima";
 
 export type TransferStok = {
   id: string;
@@ -59,6 +64,10 @@ export type TransferStok = {
   jumlah: number;
   catatan: string | null;
   dibuatPada: string; // ISO date string
+  status: StatusTransfer;
+  dibuatOlehNama: string | null;
+  diterimaOlehNama: string | null;
+  diterimaPada: string | null; // ISO date string, null kalau belum dikonfirmasi
 };
 
 // Nilai stok yang spesifik untuk satu kombinasi produk + cabang.
