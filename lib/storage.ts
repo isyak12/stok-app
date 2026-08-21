@@ -422,6 +422,9 @@ type BarisTransferStok = {
   dibuat_oleh_nama: string | null;
   diterima_oleh_nama: string | null;
   diterima_pada: string | null;
+  dibatalkan_oleh_nama: string | null;
+  dibatalkan_pada: string | null;
+  alasan_pembatalan: string | null;
 };
 
 function keTransferStok(baris: BarisTransferStok): TransferStok {
@@ -437,6 +440,9 @@ function keTransferStok(baris: BarisTransferStok): TransferStok {
     dibuatOlehNama: baris.dibuat_oleh_nama,
     diterimaOlehNama: baris.diterima_oleh_nama,
     diterimaPada: baris.diterima_pada,
+    dibatalkanOlehNama: baris.dibatalkan_oleh_nama,
+    dibatalkanPada: baris.dibatalkan_pada,
+    alasanPembatalan: baris.alasan_pembatalan,
   };
 }
 
@@ -456,7 +462,7 @@ export function useTransferStok(produkId: string) {
     const { data: baris, error } = await supabase
       .from("transfer_stok")
       .select(
-        "id, produk_id, dari_cabang_id, ke_cabang_id, jumlah, catatan, dibuat_pada, status, dibuat_oleh_nama, diterima_oleh_nama, diterima_pada",
+        "id, produk_id, dari_cabang_id, ke_cabang_id, jumlah, catatan, dibuat_pada, status, dibuat_oleh_nama, diterima_oleh_nama, diterima_pada, dibatalkan_oleh_nama, dibatalkan_pada, alasan_pembatalan",
       )
       .eq("produk_id", produkId)
       .order("dibuat_pada", { ascending: false });
@@ -520,7 +526,28 @@ export function useTransferStok(produkId: string) {
     [muatUlang],
   );
 
-  return { data, siap, error, catat, konfirmasiTerima, muatUlang };
+  // Batalkan transfer yang masih 'terkirim': mengembalikan jumlah yang
+  // sudah dikurangi dari stok cabang asal (lihat
+  // supabase/pembatalan_transfer.sql, function batalkan_transfer_stok).
+  // Transfer yang sudah 'diterima' atau sudah 'dibatalkan' akan ditolak
+  // oleh function di sisi database.
+  const batalkan = useCallback(
+    async (transferId: string, alasan?: string) => {
+      const { error } = await supabase.rpc("batalkan_transfer_stok", {
+        p_transfer_id: transferId,
+        p_alasan: alasan?.trim() ? alasan.trim() : null,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      await muatUlang();
+    },
+    [muatUlang],
+  );
+
+  return { data, siap, error, catat, konfirmasiTerima, batalkan, muatUlang };
 }
 
 /**

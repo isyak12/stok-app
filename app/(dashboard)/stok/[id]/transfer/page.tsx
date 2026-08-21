@@ -18,6 +18,7 @@ export default function TransferStokPage() {
     error,
     catat,
     konfirmasiTerima,
+    batalkan,
   } = useTransferStok(params.id);
 
   const barang = cariById(params.id);
@@ -70,7 +71,9 @@ export default function TransferStokPage() {
             <p className="text-xs text-ink/50 mb-3 max-w-xl">
               Stok cabang asal berkurang begitu transfer dicatat (status
               "Terkirim"). Stok cabang tujuan baru bertambah setelah ditandai
-              "Diterima".
+              "Diterima". Selama masih "Terkirim", transfer bisa dibatalkan —
+              stok akan dikembalikan ke cabang asal. Transfer yang sudah
+              "Diterima" tidak bisa dibatalkan lagi.
             </p>
             {error && (
               <div className="mb-3 px-4 py-3 bg-rust/10 border border-rust/30 text-rust text-sm rounded-sm">
@@ -84,6 +87,7 @@ export default function TransferStokPage() {
                 data={transfer}
                 daftarCabang={daftarCabang}
                 onKonfirmasiTerima={konfirmasiTerima}
+                onBatalkan={batalkan}
               />
             )}
           </div>

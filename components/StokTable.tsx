@@ -74,7 +74,9 @@ export default function StokTable({ data, onHapus }: Props) {
               <th className="px-4 py-3 font-medium hidden sm:table-cell">
                 Kategori
               </th>
-              <th className="px-4 py-3 font-medium text-right">Jumlah</th>
+              <th className="px-4 py-3 font-medium text-right">
+                Jumlah (semua cabang)
+              </th>
               <th className="px-4 py-3 font-medium text-right hidden sm:table-cell">
                 Harga Jual
               </th>

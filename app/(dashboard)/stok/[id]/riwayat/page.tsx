@@ -25,12 +25,11 @@ export default function RiwayatMutasiPage() {
         <div className="text-[11px] uppercase tracking-[0.2em] text-rust font-mono mb-1">
           Inventaris
         </div>
-        <h1 className="font-display text-3xl font-semibold">
-          Riwayat Mutasi
-        </h1>
+        <h1 className="font-display text-3xl font-semibold">Riwayat Mutasi</h1>
         {barang && (
           <p className="text-sm text-ink/60 mt-1">
-            {barang.nama} · Stok saat ini: {barang.jumlah} {barang.satuan}
+            {barang.nama} · Stok saat ini (semua cabang): {barang.jumlah}{" "}
+            {barang.satuan}
           </p>
         )}
       </div>
@@ -60,8 +59,8 @@ export default function RiwayatMutasiPage() {
           </Link>
 
           <p className="text-sm text-ink/50 max-w-2xl">
-            Gabungan semua transaksi (masuk/keluar) dan transfer antar
-            cabang untuk barang ini, terurut dari yang terbaru.
+            Gabungan semua transaksi (masuk/keluar) dan transfer antar cabang
+            untuk barang ini, terurut dari yang terbaru.
           </p>
 
           {error && (

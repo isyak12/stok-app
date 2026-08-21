@@ -4,8 +4,9 @@ import {
   ArrowDownToLine,
   ArrowRightLeft,
   ArrowUpFromLine,
+  XCircle,
 } from "lucide-react";
-import { Cabang, MutasiStok } from "@/lib/types";
+import { Cabang, MutasiStok, StatusTransfer } from "@/lib/types";
 
 type Props = {
   data: MutasiStok[];
@@ -48,7 +49,15 @@ function Badge({ mutasi }: { mutasi: MutasiStok }) {
 // yang stok tujuannya BELUM ditambahkan (masih "terkirim") terlihat
 // sama persis dengan yang sudah selesai — bisa membingungkan staf
 // cabang tujuan mengira barang sudah pasti sampai & tercatat.
-function StatusTransferBadge({ status }: { status: "terkirim" | "diterima" }) {
+function StatusTransferBadge({ status }: { status: StatusTransfer }) {
+  if (status === "dibatalkan") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[11px] font-medium bg-rust/10 text-rust">
+        <XCircle size={11} />
+        Dibatalkan
+      </span>
+    );
+  }
   const diterima = status === "diterima";
   return (
     <span
