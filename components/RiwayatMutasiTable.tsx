@@ -44,6 +44,23 @@ function Badge({ mutasi }: { mutasi: MutasiStok }) {
   );
 }
 
+// Status kirim -> terima untuk entri transfer. Tanpa ini, transfer
+// yang stok tujuannya BELUM ditambahkan (masih "terkirim") terlihat
+// sama persis dengan yang sudah selesai — bisa membingungkan staf
+// cabang tujuan mengira barang sudah pasti sampai & tercatat.
+function StatusTransferBadge({ status }: { status: "terkirim" | "diterima" }) {
+  const diterima = status === "diterima";
+  return (
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-sm text-[11px] font-medium ${
+        diterima ? "bg-moss/10 text-moss" : "bg-amber-500/10 text-amber-700"
+      }`}
+    >
+      {diterima ? "Diterima" : "Menunggu diterima"}
+    </span>
+  );
+}
+
 export default function RiwayatMutasiTable({ data, daftarCabang }: Props) {
   function namaCabang(id: string) {
     return daftarCabang.find((c) => c.id === id)?.nama ?? "—";
@@ -75,7 +92,12 @@ export default function RiwayatMutasiTable({ data, daftarCabang }: Props) {
                   {formatTanggal(m.dibuatPada)}
                 </td>
                 <td className="px-4 py-3">
-                  <Badge mutasi={m} />
+                  <div className="flex flex-col items-start gap-1">
+                    <Badge mutasi={m} />
+                    {m.jenis === "transfer" && (
+                      <StatusTransferBadge status={m.status} />
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-ink/70 hidden sm:table-cell">
                   {m.jenis === "transfer"

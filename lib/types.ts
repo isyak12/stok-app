@@ -100,4 +100,8 @@ export type MutasiStok =
       dibuatPada: string;
       dariCabangId: string;
       keCabangId: string;
+      // Status alur kirim -> terima. Dipakai supaya "Riwayat Mutasi"
+      // tidak menampilkan transfer yang stok tujuannya BELUM
+      // bertambah seolah-olah sudah pindah sepenuhnya.
+      status: StatusTransfer;
     };

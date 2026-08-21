@@ -552,6 +552,7 @@ export function useRiwayatMutasi(produkId: string) {
       dibuatPada: t.dibuatPada,
       dariCabangId: t.dariCabangId,
       keCabangId: t.keCabangId,
+      status: t.status,
     }));
     return [...dariTransaksi, ...dariTransfer].sort(
       (a, b) =>

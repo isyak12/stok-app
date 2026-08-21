@@ -31,6 +31,12 @@ export default function TransaksiStokTable({ data, daftarCabang }: Props) {
             <th className="px-4 py-3 font-medium">Tipe</th>
             <th className="px-4 py-3 font-medium">Cabang</th>
             <th className="px-4 py-3 font-medium text-right">Jumlah</th>
+            <th className="px-4 py-3 font-medium hidden md:table-cell">
+              Pihak
+            </th>
+            <th className="px-4 py-3 font-medium hidden md:table-cell">
+              No. Referensi
+            </th>
             <th className="px-4 py-3 font-medium">Catatan</th>
           </tr>
         </thead>
@@ -68,6 +74,12 @@ export default function TransaksiStokTable({ data, daftarCabang }: Props) {
                   {masuk ? "+" : "-"}
                   {t.jumlah}
                 </td>
+                <td className="px-4 py-3 text-ink/70 hidden md:table-cell">
+                  {t.pihak || <span className="text-ink/30">—</span>}
+                </td>
+                <td className="px-4 py-3 text-ink/70 font-mono text-xs hidden md:table-cell">
+                  {t.noReferensi || <span className="text-ink/30">—</span>}
+                </td>
                 <td className="px-4 py-3 text-ink/70">
                   {t.catatan || <span className="text-ink/30">—</span>}
                 </td>
@@ -77,7 +89,7 @@ export default function TransaksiStokTable({ data, daftarCabang }: Props) {
           {data.length === 0 && (
             <tr>
               <td
-                colSpan={5}
+                colSpan={7}
                 className="px-4 py-10 text-center text-ink/40 text-sm"
               >
                 Belum ada transaksi stok untuk barang ini.
