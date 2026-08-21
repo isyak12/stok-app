@@ -36,14 +36,16 @@ export default function Sidebar({
     router.refresh();
   }
 
-  const navTerlihat = NAV.filter((item) => !item.hanyaAdmin || peran === "admin");
+  const navTerlihat = NAV.filter(
+    (item) => !item.hanyaAdmin || peran === "admin",
+  );
 
   return (
     <>
       {/* Topbar khusus mobile — sidebar penuh disembunyikan di layar kecil */}
       <div className="md:hidden flex items-center justify-between bg-ink text-paper px-4 py-3 sticky top-0 z-30">
         <div className="font-display text-lg font-700 tracking-tight">
-          STOKKU
+          STOKKU - Skynet
         </div>
         <button
           onClick={() => setTerbuka(true)}
@@ -137,7 +139,7 @@ export default function Sidebar({
         </div>
 
         <div className="px-6 py-4 text-[11px] text-wheat/50 font-mono border-t border-white/5">
-          v1.1 — Supabase
+          v1.1 — Stok-Skynet
         </div>
       </aside>
     </>
