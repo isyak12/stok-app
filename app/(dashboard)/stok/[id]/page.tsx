@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowLeftRight, ArrowRightLeft, ClipboardCheck, History } from "lucide-react";
 import { useStok } from "@/lib/storage";
+import { useUser } from "@/lib/useUser";
 import StokForm from "@/components/StokForm";
 import { useParams, useRouter } from "next/navigation";
 
@@ -10,6 +11,7 @@ export default function EditStokPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { siap, cariById, perbarui } = useStok();
+  const { peran } = useUser();
 
   const barang = cariById(params.id);
 
@@ -75,6 +77,7 @@ export default function EditStokPage() {
           judul={`Ubah "${barang.nama}"`}
           awal={barang}
           onSimpan={(input) => perbarui(barang.id, input)}
+          peran={peran}
         />
       )}
     </div>

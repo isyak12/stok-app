@@ -4,11 +4,14 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BarangInput, Barang } from "@/lib/types";
 import { useCabang, useStokPerCabang } from "@/lib/storage";
+import { Peran } from "@/lib/role";
+import { Lock } from "lucide-react";
 
 type Props = {
   awal?: Barang;
   onSimpan: (input: BarangInput) => Promise<void>;
   judul: string;
+  peran?: Peran;
 };
 
 const KATEGORI_UMUM = [
@@ -20,9 +23,19 @@ const KATEGORI_UMUM = [
   "Lainnya",
 ];
 
-export default function StokForm({ awal, onSimpan, judul }: Props) {
+export default function StokForm({
+  awal,
+  onSimpan,
+  judul,
+  peran = "admin",
+}: Props) {
   const router = useRouter();
   const modeEdit = Boolean(awal);
+  // Field data master (nama/sku/kategori/harga) hanya boleh diubah admin.
+  // Di mode Tambah, seluruh form tetap dianggap boleh diisi -- halaman
+  // pemanggilnya (stok/tambah) sudah memblokir akses staf ke mode ini
+  // lebih dulu.
+  const kunciMaster = modeEdit && peran !== "admin";
   const { data: daftarCabang, siap: cabangSiap } = useCabang();
   // Stok per-cabang produk ini (kosong kalau mode Tambah, karena belum ada id)
   const { data: stokPerCabang, siap: stokPerCabangSiap } = useStokPerCabang(
@@ -109,7 +122,16 @@ export default function StokForm({ awal, onSimpan, judul }: Props) {
       onSubmit={submit}
       className="bg-white border border-ink/10 rounded-sm p-6 max-w-2xl"
     >
-      <h2 className="font-display text-lg font-semibold mb-6">{judul}</h2>
+      <h2 className="font-display text-lg font-semibold mb-1">{judul}</h2>
+
+      {kunciMaster && (
+        <p className="text-xs text-ink/50 flex items-center gap-1.5 mb-5">
+          <Lock size={12} />
+          SKU, nama, kategori & harga hanya bisa diubah oleh admin. Kamu tetap
+          bisa memperbarui jumlah, lokasi & stok minimum di bawah.
+        </p>
+      )}
+      {!kunciMaster && <div className="mb-6" />}
 
       {error && (
         <div className="mb-4 px-4 py-3 bg-rust/10 border border-rust/30 text-rust text-sm rounded-sm">
@@ -121,18 +143,20 @@ export default function StokForm({ awal, onSimpan, judul }: Props) {
         <Field label="Kode SKU">
           <input
             required
+            disabled={kunciMaster}
             value={form.sku}
             onChange={(e) => ubah("sku", e.target.value)}
             placeholder="cth. ELK-0099"
-            className="input font-mono"
+            className="input font-mono disabled:bg-paper disabled:text-ink/50"
           />
         </Field>
 
         <Field label="Kategori">
           <select
+            disabled={kunciMaster}
             value={form.kategori}
             onChange={(e) => ubah("kategori", e.target.value)}
-            className="input"
+            className="input disabled:bg-paper disabled:text-ink/50"
           >
             {KATEGORI_UMUM.map((k) => (
               <option key={k}>{k}</option>
@@ -170,10 +194,11 @@ export default function StokForm({ awal, onSimpan, judul }: Props) {
         <Field label="Nama Barang" span2>
           <input
             required
+            disabled={kunciMaster}
             value={form.nama}
             onChange={(e) => ubah("nama", e.target.value)}
             placeholder="cth. Kabel HDMI 2m"
-            className="input"
+            className="input disabled:bg-paper disabled:text-ink/50"
           />
         </Field>
 
@@ -189,10 +214,11 @@ export default function StokForm({ awal, onSimpan, judul }: Props) {
 
         <Field label="Satuan">
           <input
+            disabled={kunciMaster}
             value={form.satuan}
             onChange={(e) => ubah("satuan", e.target.value)}
             placeholder="pcs / kg / box"
-            className="input"
+            className="input disabled:bg-paper disabled:text-ink/50"
           />
         </Field>
 
@@ -219,9 +245,10 @@ export default function StokForm({ awal, onSimpan, judul }: Props) {
           <input
             type="number"
             min={0}
+            disabled={kunciMaster}
             value={form.hargaBeli}
             onChange={(e) => ubah("hargaBeli", Number(e.target.value))}
-            className="input font-mono"
+            className="input font-mono disabled:bg-paper disabled:text-ink/50"
           />
         </Field>
 
@@ -229,9 +256,10 @@ export default function StokForm({ awal, onSimpan, judul }: Props) {
           <input
             type="number"
             min={0}
+            disabled={kunciMaster}
             value={form.hargaJual}
             onChange={(e) => ubah("hargaJual", Number(e.target.value))}
-            className="input font-mono"
+            className="input font-mono disabled:bg-paper disabled:text-ink/50"
           />
         </Field>
       </div>

@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useStok } from "@/lib/storage";
+import { useUser } from "@/lib/useUser";
 import StokTable from "@/components/StokTable";
 import { PackagePlus } from "lucide-react";
 
 export default function DaftarStokPage() {
   const { data, siap, error, hapus } = useStok();
+  const { peran } = useUser();
 
   return (
     <div className="p-4 sm:p-8 max-w-6xl">
@@ -22,13 +24,15 @@ export default function DaftarStokPage() {
             {data.length} jenis barang tercatat.
           </p>
         </div>
-        <Link
-          href="/stok/tambah"
-          className="flex items-center gap-2 px-4 py-2.5 bg-ink text-paper text-sm font-medium rounded-sm hover:bg-ink/90 transition-colors whitespace-nowrap"
-        >
-          <PackagePlus size={16} />
-          Tambah Barang
-        </Link>
+        {peran === "admin" && (
+          <Link
+            href="/stok/tambah"
+            className="flex items-center gap-2 px-4 py-2.5 bg-ink text-paper text-sm font-medium rounded-sm hover:bg-ink/90 transition-colors whitespace-nowrap"
+          >
+            <PackagePlus size={16} />
+            Tambah Barang
+          </Link>
+        )}
       </header>
 
       {error && (
@@ -40,7 +44,7 @@ export default function DaftarStokPage() {
       {!siap ? (
         <p className="text-ink/40 text-sm">Memuat data...</p>
       ) : (
-        <StokTable data={data} onHapus={hapus} />
+        <StokTable data={data} onHapus={hapus} peran={peran} />
       )}
     </div>
   );

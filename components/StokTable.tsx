@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Barang } from "@/lib/types";
+import { Peran } from "@/lib/role";
 import { Search, Pencil, Trash2, TriangleAlert } from "lucide-react";
 
 function formatRupiah(n: number) {
@@ -16,11 +17,13 @@ function formatRupiah(n: number) {
 type Props = {
   data: Barang[];
   onHapus: (id: string) => Promise<void>;
+  peran?: Peran;
 };
 
-export default function StokTable({ data, onHapus }: Props) {
+export default function StokTable({ data, onHapus, peran = "staf" }: Props) {
   const [q, setQ] = useState("");
   const [kategori, setKategori] = useState("Semua");
+  const bolehHapus = peran === "admin";
 
   const kategoriList = useMemo(
     () => ["Semua", ...Array.from(new Set(data.map((b) => b.kategori)))],
@@ -128,25 +131,27 @@ export default function StokTable({ data, onHapus }: Props) {
                       >
                         <Pencil size={15} />
                       </Link>
-                      <button
-                        onClick={async () => {
-                          if (confirm(`Hapus "${b.nama}" dari stok?`)) {
-                            try {
-                              await onHapus(b.id);
-                            } catch (err) {
-                              alert(
-                                err instanceof Error
-                                  ? err.message
-                                  : "Gagal menghapus barang.",
-                              );
+                      {bolehHapus && (
+                        <button
+                          onClick={async () => {
+                            if (confirm(`Hapus "${b.nama}" dari stok?`)) {
+                              try {
+                                await onHapus(b.id);
+                              } catch (err) {
+                                alert(
+                                  err instanceof Error
+                                    ? err.message
+                                    : "Gagal menghapus barang.",
+                                );
+                              }
                             }
-                          }
-                        }}
-                        className="p-1.5 rounded-sm hover:bg-rust/10 text-ink/60 hover:text-rust"
-                        title="Hapus"
-                      >
-                        <Trash2 size={15} />
-                      </button>
+                          }}
+                          className="p-1.5 rounded-sm hover:bg-rust/10 text-ink/60 hover:text-rust"
+                          title="Hapus"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

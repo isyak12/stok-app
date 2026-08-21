@@ -5,14 +5,26 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { LayoutGrid, Boxes, PackagePlus, LogOut, Menu, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { labelPeran, Peran } from "@/lib/role";
 
 const NAV = [
   { href: "/", label: "Dasbor", icon: LayoutGrid },
   { href: "/stok", label: "Daftar Stok", icon: Boxes },
-  { href: "/stok/tambah", label: "Tambah Barang", icon: PackagePlus },
+  {
+    href: "/stok/tambah",
+    label: "Tambah Barang",
+    icon: PackagePlus,
+    hanyaAdmin: true,
+  },
 ];
 
-export default function Sidebar({ username }: { username: string }) {
+export default function Sidebar({
+  username,
+  peran,
+}: {
+  username: string;
+  peran: Peran;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [terbuka, setTerbuka] = useState(false);
@@ -23,6 +35,8 @@ export default function Sidebar({ username }: { username: string }) {
     router.push("/login");
     router.refresh();
   }
+
+  const navTerlihat = NAV.filter((item) => !item.hanyaAdmin || peran === "admin");
 
   return (
     <>
@@ -78,7 +92,7 @@ export default function Sidebar({ username }: { username: string }) {
         <div className="divider-barcode text-paper mx-6" />
 
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-          {NAV.map((item) => {
+          {navTerlihat.map((item) => {
             const active =
               item.href === "/"
                 ? pathname === "/"
@@ -106,8 +120,11 @@ export default function Sidebar({ username }: { username: string }) {
 
         <div className="px-4 py-4">
           {username && (
-            <div className="px-3 mb-2 text-xs text-wheat/60 truncate" title={username}>
-              {username}
+            <div className="px-3 mb-2 truncate" title={username}>
+              <div className="text-xs text-wheat/60">{username}</div>
+              <div className="text-[10px] uppercase tracking-wider text-rust/80 font-mono mt-0.5">
+                {labelPeran(peran)}
+              </div>
             </div>
           )}
           <button
