@@ -7,7 +7,7 @@ export default function TambahStokPage() {
   const { tambah } = useStok();
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <div className="mb-6">
         <div className="text-[11px] uppercase tracking-[0.2em] text-rust font-mono mb-1">
           Inventaris

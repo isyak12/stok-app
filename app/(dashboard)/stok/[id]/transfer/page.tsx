@@ -22,7 +22,7 @@ export default function TransferStokPage() {
   const barang = cariById(params.id);
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <div className="mb-6">
         <div className="text-[11px] uppercase tracking-[0.2em] text-rust font-mono mb-1">
           Inventaris
@@ -30,7 +30,8 @@ export default function TransferStokPage() {
         <h1 className="font-display text-3xl font-semibold">Transfer Stok</h1>
         {barang && (
           <p className="text-sm text-ink/60 mt-1">
-            {barang.nama} · Stok saat ini (semua cabang): {barang.jumlah} {barang.satuan}
+            {barang.nama} · Stok saat ini (semua cabang): {barang.jumlah}{" "}
+            {barang.satuan}
           </p>
         )}
       </div>

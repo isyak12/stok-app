@@ -21,14 +21,12 @@ export default function TransaksiStokPage() {
   const barang = cariById(params.id);
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <div className="mb-6">
         <div className="text-[11px] uppercase tracking-[0.2em] text-rust font-mono mb-1">
           Inventaris
         </div>
-        <h1 className="font-display text-3xl font-semibold">
-          Transaksi Stok
-        </h1>
+        <h1 className="font-display text-3xl font-semibold">Transaksi Stok</h1>
         {barang && (
           <p className="text-sm text-ink/60 mt-1">
             {barang.nama} · Stok saat ini: {barang.jumlah} {barang.satuan}
@@ -60,7 +58,10 @@ export default function TransaksiStokPage() {
             Kembali ke "{barang.nama}"
           </Link>
 
-          <TransaksiStokForm cabangDefaultId={barang.cabangId} onCatat={catat} />
+          <TransaksiStokForm
+            cabangDefaultId={barang.cabangId}
+            onCatat={catat}
+          />
 
           <div>
             <h2 className="font-display text-lg font-semibold mb-3">

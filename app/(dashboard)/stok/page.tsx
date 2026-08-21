@@ -9,7 +9,7 @@ export default function DaftarStokPage() {
   const { data, siap, error, hapus } = useStok();
 
   return (
-    <div className="p-8 max-w-6xl">
+    <div className="p-4 sm:p-8 max-w-6xl">
       <header className="mb-6 flex items-start justify-between">
         <div>
           <div className="text-[11px] uppercase tracking-[0.2em] text-rust font-mono mb-1">

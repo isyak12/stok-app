@@ -19,10 +19,10 @@ export default function DasborPage() {
   const totalJenis = data.length;
   const totalUnit = data.reduce((a, b) => a + b.jumlah, 0);
   const nilaiStok = data.reduce((a, b) => a + b.jumlah * b.hargaBeli, 0);
-  const stokRendah = data.filter((b) => b.stokRendah);
+  const stokRendah = data.filter((b) => b.jumlah <= b.stokMinimum);
 
   return (
-    <div className="p-8 max-w-6xl">
+    <div className="p-4 sm:p-8 max-w-6xl">
       <header className="mb-8">
         <div className="text-[11px] uppercase tracking-[0.2em] text-rust font-mono mb-1">
           Ringkasan
@@ -80,8 +80,8 @@ export default function DasborPage() {
 
             {stokRendah.length === 0 ? (
               <p className="px-5 py-8 text-center text-ink/40 text-sm">
-                Semua stok dalam kondisi aman. Tidak ada barang yang perlu
-                diisi ulang saat ini.
+                Semua stok dalam kondisi aman. Tidak ada barang yang perlu diisi
+                ulang saat ini.
               </p>
             ) : (
               <ul className="divide-y divide-ink/5">
