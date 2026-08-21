@@ -45,7 +45,7 @@ export default function Sidebar({
       {/* Topbar khusus mobile — sidebar penuh disembunyikan di layar kecil */}
       <div className="md:hidden flex items-center justify-between bg-ink text-paper px-4 py-3 sticky top-0 z-30">
         <div className="font-display text-lg font-700 tracking-tight">
-          STOKKU - Skynet
+          STOK - Skynet
         </div>
         <button
           onClick={() => setTerbuka(true)}
@@ -76,7 +76,7 @@ export default function Sidebar({
         <div className="flex items-start justify-between px-6 pt-8 pb-6">
           <div>
             <div className="font-display text-2xl font-700 tracking-tight">
-              STOKKU
+              STOK - SKYNET
             </div>
             <div className="text-[11px] uppercase tracking-[0.2em] text-wheat/70 mt-1">
               Manajemen Stok Barang
@@ -139,7 +139,7 @@ export default function Sidebar({
         </div>
 
         <div className="px-6 py-4 text-[11px] text-wheat/50 font-mono border-t border-white/5">
-          v1.1 — Stok-Skynet
+          v1.1 — STOK-SKYNET
         </div>
       </aside>
     </>

@@ -28,7 +28,7 @@ export default function LoginPage() {
       setError(
         error.message === "Invalid login credentials"
           ? "Username atau kata sandi salah."
-          : error.message
+          : error.message,
       );
       setMemuat(false);
       return;
@@ -46,7 +46,7 @@ export default function LoginPage() {
             <Lock size={20} />
           </div>
           <div className="font-display text-2xl font-700 text-paper tracking-tight">
-            STOKKU
+            STOK - SKYNET
           </div>
           <div className="text-[11px] uppercase tracking-[0.2em] text-wheat/60 mt-1">
             Masuk untuk mengelola stok
