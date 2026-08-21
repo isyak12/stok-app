@@ -3,8 +3,13 @@
 -- no. referensi) + alur konfirmasi terima untuk transfer stok.
 --
 -- Jalankan file ini di Supabase Dashboard > SQL Editor SETELAH
--- schema.sql, transaksi_stok.sql, migrasi_cabang.sql, DAN
--- transfer_stok.sql (butuh tabel & function itu semua sudah ada).
+-- schema.sql, transaksi_stok.sql, migrasi_cabang.sql,
+-- migrasi_transaksi_cabang.sql, DAN transfer_stok.sql (butuh
+-- tabel & function itu semua sudah ada — termasuk kolom
+-- transaksi_stok.cabang_id dari migrasi_transaksi_cabang.sql,
+-- yang WAJIB dijalankan lebih dulu karena kolom itu NOT NULL dan
+-- ikut disertakan di insert function catat_transaksi_stok di
+-- bawah).
 -- ============================================================
 
 -- ------------------------------------------------------------
@@ -80,11 +85,11 @@ begin
     and cabang_id = p_cabang_id;
 
   insert into transaksi_stok (
-    produk_id, tipe, jumlah, catatan,
+    produk_id, cabang_id, tipe, jumlah, catatan,
     dibuat_oleh, dibuat_oleh_nama, pihak, no_referensi
   )
   values (
-    p_produk_id, p_tipe, p_jumlah, p_catatan,
+    p_produk_id, p_cabang_id, p_tipe, p_jumlah, p_catatan,
     auth.uid(), auth.email(), p_pihak, p_no_referensi
   )
   returning * into v_transaksi;
