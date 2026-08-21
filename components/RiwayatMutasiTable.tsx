@@ -4,6 +4,8 @@ import {
   ArrowDownToLine,
   ArrowRightLeft,
   ArrowUpFromLine,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
 import { Cabang, MutasiStok } from "@/lib/types";
 
@@ -24,11 +26,22 @@ function formatTanggal(iso: string) {
 
 function Badge({ mutasi }: { mutasi: MutasiStok }) {
   if (mutasi.jenis === "transfer") {
+    const terkirim = mutasi.status === "terkirim";
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-xs font-medium bg-ink/5 text-ink/70">
-        <ArrowRightLeft size={12} />
-        Transfer
-      </span>
+      <div className="flex flex-col gap-1">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-xs font-medium bg-ink/5 text-ink/70 w-fit">
+          <ArrowRightLeft size={12} />
+          Transfer
+        </span>
+        <span
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[11px] font-medium w-fit ${
+            terkirim ? "bg-wheat/30 text-ink/70" : "bg-moss/10 text-moss"
+          }`}
+        >
+          {terkirim ? <Clock size={11} /> : <CheckCircle2 size={11} />}
+          {terkirim ? "Terkirim" : "Diterima"}
+        </span>
+      </div>
     );
   }
   const masuk = mutasi.jenis === "masuk";
@@ -51,7 +64,7 @@ export default function RiwayatMutasiTable({ data, daftarCabang }: Props) {
 
   return (
     <div className="bg-white border border-ink/10 rounded-sm overflow-x-auto">
-      <table className="w-full min-w-[560px] text-sm">
+      <table className="w-full min-w-[760px] text-sm">
         <thead>
           <tr className="text-left text-[11px] uppercase tracking-wider text-ink/50 border-b border-ink/10 bg-paper/60">
             <th className="px-4 py-3 font-medium">Tanggal</th>
@@ -60,6 +73,9 @@ export default function RiwayatMutasiTable({ data, daftarCabang }: Props) {
               Detail
             </th>
             <th className="px-4 py-3 font-medium text-right">Jumlah</th>
+            <th className="px-4 py-3 font-medium hidden md:table-cell">
+              Pihak / Diproses oleh
+            </th>
             <th className="px-4 py-3 font-medium">Catatan</th>
           </tr>
         </thead>
@@ -80,11 +96,33 @@ export default function RiwayatMutasiTable({ data, daftarCabang }: Props) {
                 <td className="px-4 py-3 text-ink/70 hidden sm:table-cell">
                   {m.jenis === "transfer"
                     ? `${namaCabang(m.dariCabangId)} → ${namaCabang(m.keCabangId)}`
-                    : "—"}
+                    : m.noReferensi || "—"}
                 </td>
                 <td className="px-4 py-3 text-right font-mono">
                   {tanda}
                   {m.jumlah}
+                </td>
+                <td className="px-4 py-3 text-ink/70 hidden md:table-cell">
+                  {m.jenis === "transfer" ? (
+                    <div className="text-xs leading-relaxed">
+                      <div>Kirim: {m.dibuatOlehNama || "—"}</div>
+                      <div>
+                        Terima:{" "}
+                        {m.diterimaOlehNama || (
+                          <span className="text-ink/30">
+                            belum dikonfirmasi
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs leading-relaxed">
+                      <div>{m.pihak || <span className="text-ink/30">—</span>}</div>
+                      <div className="text-ink/40">
+                        dicatat oleh {m.dibuatOlehNama || "—"}
+                      </div>
+                    </div>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-ink/70">
                   {m.catatan || <span className="text-ink/30">—</span>}
@@ -95,7 +133,7 @@ export default function RiwayatMutasiTable({ data, daftarCabang }: Props) {
           {data.length === 0 && (
             <tr>
               <td
-                colSpan={5}
+                colSpan={6}
                 className="px-4 py-10 text-center text-ink/40 text-sm"
               >
                 Belum ada mutasi stok untuk barang ini.

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "./supabase/client";
+import { emailKeUsername } from "./username";
 import {
   Barang,
   BarangInput,
@@ -295,6 +296,9 @@ type BarisTransaksiStok = {
   jumlah: number;
   catatan: string | null;
   dibuat_pada: string;
+  dibuat_oleh_nama: string | null;
+  pihak: string | null;
+  no_referensi: string | null;
 };
 
 function keTransaksiStok(baris: BarisTransaksiStok): TransaksiStok {
@@ -305,6 +309,11 @@ function keTransaksiStok(baris: BarisTransaksiStok): TransaksiStok {
     jumlah: baris.jumlah,
     catatan: baris.catatan,
     dibuatPada: baris.dibuat_pada,
+    dibuatOlehNama: baris.dibuat_oleh_nama
+      ? emailKeUsername(baris.dibuat_oleh_nama)
+      : null,
+    pihak: baris.pihak,
+    noReferensi: baris.no_referensi,
   };
 }
 
@@ -321,7 +330,9 @@ export function useTransaksiStok(produkId: string) {
   const muatUlang = useCallback(async () => {
     const { data: baris, error } = await supabase
       .from("transaksi_stok")
-      .select("id, produk_id, tipe, jumlah, catatan, dibuat_pada")
+      .select(
+        "id, produk_id, tipe, jumlah, catatan, dibuat_pada, dibuat_oleh_nama, pihak, no_referensi",
+      )
       .eq("produk_id", produkId)
       .order("dibuat_pada", { ascending: false });
 
@@ -345,6 +356,8 @@ export function useTransaksiStok(produkId: string) {
       jumlah: number,
       cabangId: string,
       catatan?: string,
+      pihak?: string,
+      noReferensi?: string,
     ) => {
       const { error } = await supabase.rpc("catat_transaksi_stok", {
         p_produk_id: produkId,
@@ -352,6 +365,8 @@ export function useTransaksiStok(produkId: string) {
         p_tipe: tipe,
         p_jumlah: jumlah,
         p_catatan: catatan?.trim() ? catatan.trim() : null,
+        p_pihak: pihak?.trim() ? pihak.trim() : null,
+        p_no_referensi: noReferensi?.trim() ? noReferensi.trim() : null,
       });
 
       if (error) {
@@ -398,6 +413,10 @@ type BarisTransferStok = {
   jumlah: number;
   catatan: string | null;
   dibuat_pada: string;
+  status: "terkirim" | "diterima";
+  dibuat_oleh_nama: string | null;
+  diterima_oleh_nama: string | null;
+  diterima_pada: string | null;
 };
 
 function keTransferStok(baris: BarisTransferStok): TransferStok {
@@ -409,6 +428,14 @@ function keTransferStok(baris: BarisTransferStok): TransferStok {
     jumlah: baris.jumlah,
     catatan: baris.catatan,
     dibuatPada: baris.dibuat_pada,
+    status: baris.status,
+    dibuatOlehNama: baris.dibuat_oleh_nama
+      ? emailKeUsername(baris.dibuat_oleh_nama)
+      : null,
+    diterimaOlehNama: baris.diterima_oleh_nama
+      ? emailKeUsername(baris.diterima_oleh_nama)
+      : null,
+    diterimaPada: baris.diterima_pada,
   };
 }
 
@@ -428,7 +455,7 @@ export function useTransferStok(produkId: string) {
     const { data: baris, error } = await supabase
       .from("transfer_stok")
       .select(
-        "id, produk_id, dari_cabang_id, ke_cabang_id, jumlah, catatan, dibuat_pada",
+        "id, produk_id, dari_cabang_id, ke_cabang_id, jumlah, catatan, dibuat_pada, status, dibuat_oleh_nama, diterima_oleh_nama, diterima_pada",
       )
       .eq("produk_id", produkId)
       .order("dibuat_pada", { ascending: false });
@@ -473,8 +500,27 @@ export function useTransferStok(produkId: string) {
     [produkId, muatUlang],
   );
 
-  return { data, siap, error, catat, muatUlang };
+  // Konfirmasi barang sudah sampai di cabang tujuan -- baru di titik
+  // ini stok cabang tujuan bertambah (lihat catatan di
+  // supabase/mutasi_detail.sql untuk alasan alur "terkirim -> diterima").
+  const konfirmasiTerima = useCallback(
+    async (transferId: string) => {
+      const { error } = await supabase.rpc("konfirmasi_terima_transfer", {
+        p_transfer_id: transferId,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      await muatUlang();
+    },
+    [muatUlang],
+  );
+
+  return { data, siap, error, catat, konfirmasiTerima, muatUlang };
 }
+
 
 /**
  * Hook untuk halaman "Riwayat Mutasi" per barang: menggabungkan
@@ -495,6 +541,9 @@ export function useRiwayatMutasi(produkId: string) {
       jumlah: t.jumlah,
       catatan: t.catatan,
       dibuatPada: t.dibuatPada,
+      dibuatOlehNama: t.dibuatOlehNama,
+      pihak: t.pihak,
+      noReferensi: t.noReferensi,
     }));
     const dariTransfer: MutasiStok[] = transfer.data.map((t) => ({
       jenis: "transfer",
@@ -504,6 +553,10 @@ export function useRiwayatMutasi(produkId: string) {
       dibuatPada: t.dibuatPada,
       dariCabangId: t.dariCabangId,
       keCabangId: t.keCabangId,
+      status: t.status,
+      dibuatOlehNama: t.dibuatOlehNama,
+      diterimaOlehNama: t.diterimaOlehNama,
+      diterimaPada: t.diterimaPada,
     }));
     return [...dariTransaksi, ...dariTransfer].sort(
       (a, b) =>

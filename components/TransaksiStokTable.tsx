@@ -19,13 +19,20 @@ function formatTanggal(iso: string) {
 
 export default function TransaksiStokTable({ data }: Props) {
   return (
-    <div className="bg-white border border-ink/10 rounded-sm overflow-hidden">
-      <table className="w-full text-sm">
+    <div className="bg-white border border-ink/10 rounded-sm overflow-x-auto">
+      <table className="w-full min-w-[720px] text-sm">
         <thead>
           <tr className="text-left text-[11px] uppercase tracking-wider text-ink/50 border-b border-ink/10 bg-paper/60">
             <th className="px-4 py-3 font-medium">Tanggal</th>
             <th className="px-4 py-3 font-medium">Tipe</th>
             <th className="px-4 py-3 font-medium text-right">Jumlah</th>
+            <th className="px-4 py-3 font-medium">Pihak</th>
+            <th className="px-4 py-3 font-medium hidden sm:table-cell">
+              No. Referensi
+            </th>
+            <th className="px-4 py-3 font-medium hidden md:table-cell">
+              Dicatat oleh
+            </th>
             <th className="px-4 py-3 font-medium">Catatan</th>
           </tr>
         </thead>
@@ -61,6 +68,15 @@ export default function TransaksiStokTable({ data }: Props) {
                   {t.jumlah}
                 </td>
                 <td className="px-4 py-3 text-ink/70">
+                  {t.pihak || <span className="text-ink/30">—</span>}
+                </td>
+                <td className="px-4 py-3 text-ink/70 font-mono text-xs hidden sm:table-cell">
+                  {t.noReferensi || <span className="text-ink/30">—</span>}
+                </td>
+                <td className="px-4 py-3 text-ink/70 hidden md:table-cell">
+                  {t.dibuatOlehNama || <span className="text-ink/30">—</span>}
+                </td>
+                <td className="px-4 py-3 text-ink/70">
                   {t.catatan || <span className="text-ink/30">—</span>}
                 </td>
               </tr>
@@ -69,7 +85,7 @@ export default function TransaksiStokTable({ data }: Props) {
           {data.length === 0 && (
             <tr>
               <td
-                colSpan={4}
+                colSpan={7}
                 className="px-4 py-10 text-center text-ink/40 text-sm"
               >
                 Belum ada transaksi stok untuk barang ini.

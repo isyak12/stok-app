@@ -12,6 +12,8 @@ type Props = {
     jumlah: number,
     cabangId: string,
     catatan?: string,
+    pihak?: string,
+    noReferensi?: string,
   ) => Promise<void>;
 };
 
@@ -67,6 +69,8 @@ function KartuTransaksi({
 }) {
   const [jumlah, setJumlah] = useState<number | "">("");
   const [catatan, setCatatan] = useState("");
+  const [pihak, setPihak] = useState("");
+  const [noReferensi, setNoReferensi] = useState("");
   const [menyimpan, setMenyimpan] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,9 +91,11 @@ function KartuTransaksi({
     setError(null);
     setMenyimpan(true);
     try {
-      await onCatat(tipe, jumlah, cabangId, catatan);
+      await onCatat(tipe, jumlah, cabangId, catatan, pihak, noReferensi);
       setJumlah("");
       setCatatan("");
+      setPihak("");
+      setNoReferensi("");
     } catch (err) {
       setError(
         err instanceof Error
@@ -138,6 +144,30 @@ function KartuTransaksi({
             setJumlah(e.target.value === "" ? "" : Number(e.target.value))
           }
           placeholder="cth. 10"
+          className="input font-mono"
+        />
+      </label>
+
+      <label className="block mb-4">
+        <span className="text-[11px] uppercase tracking-wider text-ink/50 block mb-1.5">
+          {masuk ? "Nama Supplier" : "Nama Pembeli"} (opsional)
+        </span>
+        <input
+          value={pihak}
+          onChange={(e) => setPihak(e.target.value)}
+          placeholder={masuk ? "cth. CV Sumber Makmur" : "cth. Toko Berkah"}
+          className="input"
+        />
+      </label>
+
+      <label className="block mb-4">
+        <span className="text-[11px] uppercase tracking-wider text-ink/50 block mb-1.5">
+          No. Referensi (opsional)
+        </span>
+        <input
+          value={noReferensi}
+          onChange={(e) => setNoReferensi(e.target.value)}
+          placeholder="cth. No. Nota / Invoice / PO"
           className="input font-mono"
         />
       </label>

@@ -17,6 +17,7 @@ export default function TransferStokPage() {
     siap: transferSiap,
     error,
     catat,
+    konfirmasiTerima,
   } = useTransferStok(params.id);
 
   const barang = cariById(params.id);
@@ -66,6 +67,11 @@ export default function TransferStokPage() {
             <h2 className="font-display text-lg font-semibold mb-3">
               Riwayat Transfer
             </h2>
+            <p className="text-xs text-ink/50 mb-3 max-w-xl">
+              Stok cabang asal berkurang begitu transfer dicatat (status
+              "Terkirim"). Stok cabang tujuan baru bertambah setelah ditandai
+              "Diterima".
+            </p>
             {error && (
               <div className="mb-3 px-4 py-3 bg-rust/10 border border-rust/30 text-rust text-sm rounded-sm">
                 Gagal memuat riwayat transfer: {error}
@@ -74,7 +80,11 @@ export default function TransferStokPage() {
             {!transferSiap ? (
               <p className="text-ink/40 text-sm">Memuat riwayat...</p>
             ) : (
-              <TransferStokTable data={transfer} daftarCabang={daftarCabang} />
+              <TransferStokTable
+                data={transfer}
+                daftarCabang={daftarCabang}
+                onKonfirmasiTerima={konfirmasiTerima}
+              />
             )}
           </div>
         </div>
