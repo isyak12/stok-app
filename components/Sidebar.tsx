@@ -50,10 +50,10 @@ export default function Sidebar({ username }: { username: string }) {
       )}
 
       <aside
-        className={`w-64 shrink-0 bg-ink text-paper flex flex-col relative
+        className={`w-64 shrink-0 bg-ink text-paper flex flex-col
           fixed inset-y-0 left-0 z-50 transition-transform duration-200 ease-out
           ${terbuka ? "translate-x-0" : "-translate-x-full"}
-          md:static md:translate-x-0 md:z-auto`}
+          md:relative md:translate-x-0 md:z-auto`}
       >
         <div className="absolute left-0 top-0 bottom-0 w-1.5 divider-barcode opacity-40" />
 
