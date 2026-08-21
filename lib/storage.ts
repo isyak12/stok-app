@@ -137,6 +137,8 @@ export function useStok() {
       });
 
       if (errStok) {
+        // rollback: hapus produk yang baru dibuat, biar nggak jadi data hantu
+        await supabase.from("produk").delete().eq("id", produkBaru.id);
         setError(errStok.message);
         throw errStok;
       }
