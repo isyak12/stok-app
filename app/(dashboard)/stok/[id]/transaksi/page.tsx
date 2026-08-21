@@ -30,7 +30,8 @@ export default function TransaksiStokPage() {
         <h1 className="font-display text-3xl font-semibold">Transaksi Stok</h1>
         {barang && (
           <p className="text-sm text-ink/60 mt-1">
-            {barang.nama} · Stok saat ini: {barang.jumlah} {barang.satuan}
+            {barang.nama} · Stok saat ini (semua cabang): {barang.jumlah}{" "}
+            {barang.satuan}
           </p>
         )}
       </div>

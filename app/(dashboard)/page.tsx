@@ -20,7 +20,14 @@ export default function DasborPage() {
   const totalJenis = data.length;
   const totalUnit = data.reduce((a, b) => a + b.jumlah, 0);
   const nilaiStok = data.reduce((a, b) => a + b.jumlah * b.hargaBeli, 0);
-  const stokRendah = data.filter((b) => b.stokRendah);
+  // Produk yang punya MINIMAL SATU cabang kritis. Ini cuma langkah
+  // antara untuk menyaring data sebelum di-flatMap jadi barisKritis —
+  // JANGAN dipakai untuk angka yang ditampilkan ke pengguna (mis. di
+  // StatCard), karena satu produk kritis di banyak cabang tetap
+  // terhitung 1 di sini, sedangkan barisKritis di bawah menghitungnya
+  // sekali per cabang. Pakai barisKritis.length untuk semua tampilan
+  // angka supaya konsisten dengan daftar yang ditampilkan.
+  const produkDenganCabangKritis = data.filter((b) => b.stokRendah);
 
   const namaCabang = (cabangId: string) =>
     daftarCabang.find((c) => c.id === cabangId)?.nama ?? "—";
@@ -31,7 +38,7 @@ export default function DasborPage() {
   // akan muncul lebih dari sekali di sini, masing-masing dengan
   // cabang & angkanya sendiri, supaya jelas cabang mana yang perlu
   // diisi ulang (bukan cuma total gabungan yang membingungkan).
-  const barisKritis = stokRendah.flatMap((b) =>
+  const barisKritis = produkDenganCabangKritis.flatMap((b) =>
     b.stokPerCabang
       .filter((s) => s.rendah)
       .map((s) => ({
@@ -81,9 +88,9 @@ export default function DasborPage() {
             />
             <StatCard
               label="Stok Menipis"
-              value={String(stokRendah.length)}
-              hint={stokRendah.length > 0 ? "perlu perhatian" : "aman"}
-              tone={stokRendah.length > 0 ? "warn" : "default"}
+              value={String(barisKritis.length)}
+              hint={barisKritis.length > 0 ? "perlu perhatian" : "aman"}
+              tone={barisKritis.length > 0 ? "warn" : "default"}
             />
           </div>
 
