@@ -1,62 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeftRight, ArrowRightLeft, ClipboardCheck, History } from "lucide-react";
-import { useStok } from "@/lib/storage";
-import StokForm from "@/components/StokForm";
 import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import { useCabang, useStok, useStokOpname } from "@/lib/storage";
+import StokOpnameForm from "@/components/StokOpnameForm";
+import StokOpnameTable from "@/components/StokOpnameTable";
 
-export default function EditStokPage() {
+export default function StokOpnamePage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { siap, cariById, perbarui } = useStok();
+  const { siap: produkSiap, cariById } = useStok();
+  const { data: daftarCabang } = useCabang();
+  const {
+    data: opname,
+    siap: opnameSiap,
+    error,
+    catat,
+  } = useStokOpname(params.id);
 
   const barang = cariById(params.id);
 
   return (
     <div className="p-4 sm:p-8">
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div>
-          <div className="text-[11px] uppercase tracking-[0.2em] text-rust font-mono mb-1">
-            Inventaris
-          </div>
-          <h1 className="font-display text-3xl font-semibold">Ubah Barang</h1>
+      <div className="mb-6">
+        <div className="text-[11px] uppercase tracking-[0.2em] text-rust font-mono mb-1">
+          Inventaris
         </div>
+        <h1 className="font-display text-3xl font-semibold">Stok Opname</h1>
         {barang && (
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href={`/stok/${barang.id}/transaksi`}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 border border-ink/15 text-sm rounded-sm hover:bg-white transition-colors whitespace-nowrap"
-            >
-              <ArrowLeftRight size={15} />
-              Transaksi Stok
-            </Link>
-            <Link
-              href={`/stok/${barang.id}/transfer`}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 border border-ink/15 text-sm rounded-sm hover:bg-white transition-colors whitespace-nowrap"
-            >
-              <ArrowRightLeft size={15} />
-              Transfer Stok
-            </Link>
-            <Link
-              href={`/stok/${barang.id}/opname`}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 border border-ink/15 text-sm rounded-sm hover:bg-white transition-colors whitespace-nowrap"
-            >
-              <ClipboardCheck size={15} />
-              Stok Opname
-            </Link>
-            <Link
-              href={`/stok/${barang.id}/riwayat`}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 border border-ink/15 text-sm rounded-sm hover:bg-white transition-colors whitespace-nowrap"
-            >
-              <History size={15} />
-              Riwayat Mutasi
-            </Link>
-          </div>
+          <p className="text-sm text-ink/60 mt-1">
+            {barang.nama} · Stok saat ini (semua cabang): {barang.jumlah}{" "}
+            {barang.satuan}
+          </p>
         )}
       </div>
 
-      {!siap ? (
+      {!produkSiap ? (
         <p className="text-ink/40 text-sm">Memuat data...</p>
       ) : !barang ? (
         <div className="bg-white border border-ink/10 rounded-sm p-6 max-w-2xl">
@@ -71,11 +51,42 @@ export default function EditStokPage() {
           </button>
         </div>
       ) : (
-        <StokForm
-          judul={`Ubah "${barang.nama}"`}
-          awal={barang}
-          onSimpan={(input) => perbarui(barang.id, input)}
-        />
+        <div className="space-y-8">
+          <Link
+            href={`/stok/${barang.id}`}
+            className="inline-flex items-center gap-1.5 text-sm text-ink/60 hover:text-ink"
+          >
+            <ArrowLeft size={14} />
+            Kembali ke "{barang.nama}"
+          </Link>
+
+          <p className="text-xs text-ink/50 max-w-xl">
+            Hitung fisik barang di gudang, lalu masukkan hasilnya di sini.
+            Kalau cocok dengan stok sistem, cukup tercatat sebagai bukti
+            "sudah dicek". Kalau ada selisih, sistem otomatis mencatat
+            transaksi penyesuaian (masuk/keluar) sesuai alasan yang dipilih —
+            stok cabang terkait langsung disesuaikan ke angka hasil hitung
+            fisik.
+          </p>
+
+          <StokOpnameForm barang={barang} onCatat={catat} />
+
+          <div>
+            <h2 className="font-display text-lg font-semibold mb-3">
+              Riwayat Opname
+            </h2>
+            {error && (
+              <div className="mb-3 px-4 py-3 bg-rust/10 border border-rust/30 text-rust text-sm rounded-sm">
+                Gagal memuat riwayat opname: {error}
+              </div>
+            )}
+            {!opnameSiap ? (
+              <p className="text-ink/40 text-sm">Memuat riwayat...</p>
+            ) : (
+              <StokOpnameTable data={opname} daftarCabang={daftarCabang} />
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
