@@ -58,6 +58,25 @@ export type Cabang = {
   kode: string;
 };
 
+// Alasan penyesuaian stok opname. Bebas teks di database (supaya
+// tidak kaku), tapi UI membatasi ke kategori umum ini + "lainnya"
+// dengan catatan bebas.
+export type AlasanOpname = "rusak" | "hilang" | "salah_catat" | "lainnya";
+
+export type StokOpname = {
+  id: string;
+  produkId: string;
+  cabangId: string;
+  stokSistem: number; // snapshot stok sistem saat opname dilakukan
+  stokFisik: number; // hasil hitung manual staf
+  selisih: number; // stokFisik - stokSistem
+  alasan: string | null; // null kalau selisih = 0 (tidak ada yang perlu dijelaskan)
+  catatan: string | null;
+  transaksiId: string | null; // null kalau selisih = 0 (tidak ada penyesuaian)
+  dibuatOlehNama: string | null;
+  dibuatPada: string; // ISO date string
+};
+
 export type StatusTransfer = "terkirim" | "diterima" | "dibatalkan";
 
 export type TransferStok = {

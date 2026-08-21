@@ -8,6 +8,7 @@ import {
   Cabang,
   MutasiStok,
   StokCabangValues,
+  StokOpname,
   TipeTransaksi,
   TransaksiStok,
   TransferStok,
@@ -625,4 +626,100 @@ export function useRiwayatMutasi(produkId: string) {
     siap: transaksi.siap && transfer.siap && cabang.siap,
     error: transaksi.error ?? transfer.error,
   };
+}
+
+// Bentuk baris hasil query stok_opname dari Supabase
+type BarisStokOpname = {
+  id: string;
+  produk_id: string;
+  cabang_id: string;
+  stok_sistem: number;
+  stok_fisik: number;
+  selisih: number;
+  alasan: string | null;
+  catatan: string | null;
+  transaksi_id: string | null;
+  dibuat_oleh_nama: string | null;
+  dibuat_pada: string;
+};
+
+function keStokOpname(baris: BarisStokOpname): StokOpname {
+  return {
+    id: baris.id,
+    produkId: baris.produk_id,
+    cabangId: baris.cabang_id,
+    stokSistem: baris.stok_sistem,
+    stokFisik: baris.stok_fisik,
+    selisih: baris.selisih,
+    alasan: baris.alasan,
+    catatan: baris.catatan,
+    transaksiId: baris.transaksi_id,
+    dibuatOlehNama: baris.dibuat_oleh_nama,
+    dibuatPada: baris.dibuat_pada,
+  };
+}
+
+/**
+ * Hook untuk membaca riwayat stok opname (rekonsiliasi fisik) satu
+ * produk dan mencatat sesi opname baru lewat Postgres function
+ * `catat_stok_opname`. Function di sisi database yang menentukan
+ * stok sistem terkini (snapshot), menghitung selisih, dan -- kalau
+ * ada selisih -- otomatis membuat baris transaksi_stok penyesuaian
+ * (lihat supabase/stok_opname.sql).
+ */
+export function useStokOpname(produkId: string) {
+  const [data, setData] = useState<StokOpname[]>([]);
+  const [siap, setSiap] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const muatUlang = useCallback(async () => {
+    const { data: baris, error } = await supabase
+      .from("stok_opname")
+      .select(
+        "id, produk_id, cabang_id, stok_sistem, stok_fisik, selisih, alasan, catatan, transaksi_id, dibuat_oleh_nama, dibuat_pada",
+      )
+      .eq("produk_id", produkId)
+      .order("dibuat_pada", { ascending: false });
+
+    if (error) {
+      setError(error.message);
+      setSiap(true);
+      return;
+    }
+    setError(null);
+    setData(((baris ?? []) as BarisStokOpname[]).map(keStokOpname));
+    setSiap(true);
+  }, [produkId]);
+
+  useEffect(() => {
+    muatUlang();
+  }, [muatUlang]);
+
+  const catat = useCallback(
+    async (
+      cabangId: string,
+      stokFisik: number,
+      alasan?: string,
+      catatan?: string,
+    ) => {
+      const { error } = await supabase.rpc("catat_stok_opname", {
+        p_produk_id: produkId,
+        p_cabang_id: cabangId,
+        p_stok_fisik: stokFisik,
+        p_alasan: alasan?.trim() ? alasan.trim() : null,
+        p_catatan: catatan?.trim() ? catatan.trim() : null,
+      });
+
+      if (error) {
+        // Tidak setError di sini: pesan error ditampilkan langsung di
+        // form (lihat StokOpnameForm) supaya tidak muncul dobel.
+        throw error;
+      }
+
+      await muatUlang();
+    },
+    [produkId, muatUlang],
+  );
+
+  return { data, siap, error, catat, muatUlang };
 }
