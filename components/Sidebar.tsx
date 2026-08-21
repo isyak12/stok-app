@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, Boxes, PackagePlus, LogOut } from "lucide-react";
+import { useState } from "react";
+import { LayoutGrid, Boxes, PackagePlus, LogOut, Menu, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const NAV = [
@@ -14,6 +15,7 @@ const NAV = [
 export default function Sidebar({ username }: { username: string }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [terbuka, setTerbuka] = useState(false);
 
   async function keluar() {
     const supabase = createClient();
@@ -23,63 +25,104 @@ export default function Sidebar({ username }: { username: string }) {
   }
 
   return (
-    <aside className="w-64 shrink-0 bg-ink text-paper flex flex-col relative">
-      <div className="absolute left-0 top-0 bottom-0 w-1.5 divider-barcode opacity-40" />
-      <div className="px-6 pt-8 pb-6">
-        <div className="font-display text-2xl font-700 tracking-tight">
+    <>
+      {/* Topbar khusus mobile — sidebar penuh disembunyikan di layar kecil */}
+      <div className="md:hidden flex items-center justify-between bg-ink text-paper px-4 py-3 sticky top-0 z-30">
+        <div className="font-display text-lg font-700 tracking-tight">
           STOKKU
         </div>
-        <div className="text-[11px] uppercase tracking-[0.2em] text-wheat/70 mt-1">
-          Manajemen Stok Barang
-        </div>
-      </div>
-
-      <div className="divider-barcode text-paper mx-6" />
-
-      <nav className="flex-1 px-4 py-6 space-y-1">
-        {NAV.map((item) => {
-          const active =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm transition-colors border-l-2 ${
-                active
-                  ? "bg-white/5 border-rust text-paper font-medium"
-                  : "border-transparent text-wheat/70 hover:text-paper hover:bg-white/5"
-              }`}
-            >
-              <Icon size={17} strokeWidth={1.75} />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="divider-barcode text-paper mx-6" />
-
-      <div className="px-4 py-4">
-        {username && (
-          <div className="px-3 mb-2 text-xs text-wheat/60 truncate" title={username}>
-            {username}
-          </div>
-        )}
         <button
-          onClick={keluar}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm text-wheat/70 hover:text-paper hover:bg-white/5 transition-colors"
+          onClick={() => setTerbuka(true)}
+          className="p-2 -mr-2 text-wheat/80 hover:text-paper"
+          aria-label="Buka menu"
         >
-          <LogOut size={17} strokeWidth={1.75} />
-          Keluar
+          <Menu size={22} />
         </button>
       </div>
 
-      <div className="px-6 py-4 text-[11px] text-wheat/50 font-mono border-t border-white/5">
-        v1.1 — Supabase
-      </div>
-    </aside>
+      {/* Overlay gelap di belakang menu saat terbuka (mobile saja) */}
+      {terbuka && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setTerbuka(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={`w-64 shrink-0 bg-ink text-paper flex flex-col relative
+          fixed inset-y-0 left-0 z-50 transition-transform duration-200 ease-out
+          ${terbuka ? "translate-x-0" : "-translate-x-full"}
+          md:static md:translate-x-0 md:z-auto`}
+      >
+        <div className="absolute left-0 top-0 bottom-0 w-1.5 divider-barcode opacity-40" />
+
+        <div className="flex items-start justify-between px-6 pt-8 pb-6">
+          <div>
+            <div className="font-display text-2xl font-700 tracking-tight">
+              STOKKU
+            </div>
+            <div className="text-[11px] uppercase tracking-[0.2em] text-wheat/70 mt-1">
+              Manajemen Stok Barang
+            </div>
+          </div>
+          <button
+            onClick={() => setTerbuka(false)}
+            className="md:hidden p-1 -mt-1 -mr-2 text-wheat/60 hover:text-paper"
+            aria-label="Tutup menu"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="divider-barcode text-paper mx-6" />
+
+        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+          {NAV.map((item) => {
+            const active =
+              item.href === "/"
+                ? pathname === "/"
+                : pathname.startsWith(item.href);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setTerbuka(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm transition-colors border-l-2 ${
+                  active
+                    ? "bg-white/5 border-rust text-paper font-medium"
+                    : "border-transparent text-wheat/70 hover:text-paper hover:bg-white/5"
+                }`}
+              >
+                <Icon size={17} strokeWidth={1.75} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="divider-barcode text-paper mx-6" />
+
+        <div className="px-4 py-4">
+          {username && (
+            <div className="px-3 mb-2 text-xs text-wheat/60 truncate" title={username}>
+              {username}
+            </div>
+          )}
+          <button
+            onClick={keluar}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm text-wheat/70 hover:text-paper hover:bg-white/5 transition-colors"
+          >
+            <LogOut size={17} strokeWidth={1.75} />
+            Keluar
+          </button>
+        </div>
+
+        <div className="px-6 py-4 text-[11px] text-wheat/50 font-mono border-t border-white/5">
+          v1.1 — Supabase
+        </div>
+      </aside>
+    </>
   );
 }

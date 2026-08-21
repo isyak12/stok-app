@@ -65,22 +65,22 @@ export default function StokTable({ data, onHapus }: Props) {
         </select>
       </div>
 
-      <div className="bg-white border border-ink/10 rounded-sm overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white border border-ink/10 rounded-sm overflow-x-auto">
+        <table className="w-full min-w-[640px] text-sm">
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-wider text-ink/50 border-b border-ink/10 bg-paper/60">
               <th className="px-4 py-3 font-medium">SKU</th>
               <th className="px-4 py-3 font-medium">Nama Barang</th>
-              <th className="px-4 py-3 font-medium">Kategori</th>
+              <th className="px-4 py-3 font-medium hidden sm:table-cell">Kategori</th>
               <th className="px-4 py-3 font-medium text-right">Jumlah</th>
-              <th className="px-4 py-3 font-medium text-right">Harga Jual</th>
-              <th className="px-4 py-3 font-medium">Lokasi</th>
+              <th className="px-4 py-3 font-medium text-right hidden sm:table-cell">Harga Jual</th>
+              <th className="px-4 py-3 font-medium hidden md:table-cell">Lokasi</th>
               <th className="px-4 py-3 font-medium text-right">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {hasil.map((b) => {
-              const rendah = b.stokRendah;
+              const rendah = b.jumlah <= b.stokMinimum;
               return (
                 <tr
                   key={b.id}
@@ -90,7 +90,7 @@ export default function StokTable({ data, onHapus }: Props) {
                     {b.sku}
                   </td>
                   <td className="px-4 py-3 font-medium">{b.nama}</td>
-                  <td className="px-4 py-3 text-ink/70">{b.kategori}</td>
+                  <td className="px-4 py-3 text-ink/70 hidden sm:table-cell">{b.kategori}</td>
                   <td className="px-4 py-3 text-right font-mono">
                     <span
                       className={
@@ -103,10 +103,10 @@ export default function StokTable({ data, onHapus }: Props) {
                       {b.jumlah} {b.satuan}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right font-mono">
+                  <td className="px-4 py-3 text-right font-mono hidden sm:table-cell">
                     {formatRupiah(b.hargaJual)}
                   </td>
-                  <td className="px-4 py-3 text-ink/70">{b.lokasi}</td>
+                  <td className="px-4 py-3 text-ink/70 hidden md:table-cell">{b.lokasi}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
                       <Link
