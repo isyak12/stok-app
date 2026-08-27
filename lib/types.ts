@@ -77,6 +77,27 @@ export type StokOpname = {
   dibuatPada: string; // ISO date string
 };
 
+// Satu baris jejak audit dari tabel log_aktivitas_barang (lihat
+// supabase/migrasi_log_aktivitas_barang.sql). Diisi otomatis lewat
+// trigger database -- BUKAN ditulis manual dari kode aplikasi --
+// supaya tidak ada jalur perubahan produk/stok yang lolos tidak
+// tercatat.
+export type AksiLogBarang = "tambah" | "hapus" | "kurangi";
+
+export type LogAktivitasBarang = {
+  id: string;
+  aksi: AksiLogBarang;
+  produkId: string | null;
+  produkNama: string;
+  produkSku: string;
+  cabangId: string | null;
+  cabangNama: string | null;
+  jumlah: number | null;
+  keterangan: string | null;
+  dilakukanOlehNama: string | null;
+  dilakukanPada: string; // ISO date string
+};
+
 export type StatusTransfer = "terkirim" | "diterima" | "dibatalkan";
 
 export type TransferStok = {

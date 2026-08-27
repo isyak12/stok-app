@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Barang } from "@/lib/types";
-import { Peran } from "@/lib/role";
+import { Peran, adalahAdminAtauLebih } from "@/lib/role";
 import { Search, Pencil, Trash2, TriangleAlert } from "lucide-react";
 
 function formatRupiah(n: number) {
@@ -23,7 +23,7 @@ type Props = {
 export default function StokTable({ data, onHapus, peran = "staf" }: Props) {
   const [q, setQ] = useState("");
   const [kategori, setKategori] = useState("Semua");
-  const bolehHapus = peran === "admin";
+  const bolehHapus = adalahAdminAtauLebih(peran);
 
   const kategoriList = useMemo(
     () => ["Semua", ...Array.from(new Set(data.map((b) => b.kategori)))],

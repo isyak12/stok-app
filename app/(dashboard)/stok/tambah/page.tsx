@@ -5,6 +5,7 @@ import { ShieldAlert } from "lucide-react";
 import { useStok } from "@/lib/storage";
 import { useUser } from "@/lib/useUser";
 import StokForm from "@/components/StokForm";
+import { adalahAdminAtauLebih } from "@/lib/role";
 
 export default function TambahStokPage() {
   const { tambah } = useStok();
@@ -24,7 +25,7 @@ export default function TambahStokPage() {
 
       {!siap ? (
         <p className="text-ink/40 text-sm">Memuat data...</p>
-      ) : peran !== "admin" ? (
+      ) : !adalahAdminAtauLebih(peran) ? (
         <div className="bg-white border border-ink/10 rounded-sm p-6 max-w-2xl flex items-start gap-3">
           <ShieldAlert size={20} className="text-rust shrink-0 mt-0.5" />
           <div>
