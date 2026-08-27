@@ -36,6 +36,14 @@ export default function StokForm({
   // pemanggilnya (stok/tambah) sudah memblokir akses staf ke mode ini
   // lebih dulu.
   const kunciMaster = modeEdit && !adalahAdminAtauLebih(peran);
+  // Stok minimum adalah ambang batas alert "stok menipis" di Dasbor --
+  // ini keputusan kebijakan gudang, bukan tugas harian staf, jadi
+  // dikunci dengan syarat yang sama seperti kunciMaster (bukan berarti
+  // sama tabelnya -- stok_minimum ada di tabel `stok`, bukan `produk`).
+  // Lihat trigger cegah_staf_ubah_stok_minimum() di
+  // supabase/migrasi_kunci_stok_minimum.sql -- kunci di sini murni UX,
+  // pembatasan sebenarnya ada di database.
+  const kunciStokMinimum = modeEdit && !adalahAdminAtauLebih(peran);
   const { data: daftarCabang, siap: cabangSiap } = useCabang();
   // Stok per-cabang produk ini (kosong kalau mode Tambah, karena belum ada id)
   const { data: stokPerCabang, siap: stokPerCabangSiap } = useStokPerCabang(
@@ -127,8 +135,8 @@ export default function StokForm({
       {kunciMaster && (
         <p className="text-xs text-ink/50 flex items-center gap-1.5 mb-5">
           <Lock size={12} />
-          SKU, nama, kategori & harga hanya bisa diubah oleh admin. Kamu tetap
-          bisa memperbarui jumlah, lokasi & stok minimum di bawah.
+          SKU, nama, kategori, harga & stok minimum hanya bisa diubah oleh
+          admin. Kamu tetap bisa memperbarui jumlah & lokasi di bawah.
         </p>
       )}
       {!kunciMaster && <div className="mb-6" />}
@@ -226,9 +234,10 @@ export default function StokForm({
           <input
             type="number"
             min={0}
+            disabled={kunciStokMinimum}
             value={form.stokMinimum}
             onChange={(e) => ubah("stokMinimum", Number(e.target.value))}
-            className="input font-mono"
+            className="input font-mono disabled:bg-paper disabled:text-ink/50"
           />
         </Field>
 
