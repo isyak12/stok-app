@@ -133,13 +133,20 @@ export default function StokForm({
       <h2 className="font-display text-lg font-semibold mb-1">{judul}</h2>
 
       {kunciMaster && (
-        <p className="text-xs text-ink/50 flex items-center gap-1.5 mb-5">
+        <p className="text-xs text-ink/50 flex items-center gap-1.5 mb-2">
           <Lock size={12} />
           SKU, nama, kategori, harga & stok minimum hanya bisa diubah oleh
-          admin. Kamu tetap bisa memperbarui jumlah & lokasi di bawah.
+          admin. Kamu tetap bisa memperbarui lokasi di bawah.
         </p>
       )}
-      {!kunciMaster && <div className="mb-6" />}
+      {modeEdit && (
+        <p className="text-xs text-ink/50 flex items-center gap-1.5 mb-5">
+          <Lock size={12} />
+          Jumlah stok tidak bisa diubah manual oleh siapa pun di sini --
+          gunakan menu Transaksi Stok, Transfer, atau Stok Opname.
+        </p>
+      )}
+      {!kunciMaster && !modeEdit && <div className="mb-6" />}
 
       {error && (
         <div className="mb-4 px-4 py-3 bg-rust/10 border border-rust/30 text-rust text-sm rounded-sm">
@@ -214,10 +221,18 @@ export default function StokForm({
           <input
             type="number"
             min={0}
+            disabled
+            readOnly
             value={form.jumlah}
-            onChange={(e) => ubah("jumlah", Number(e.target.value))}
-            className="input font-mono"
+            className="input font-mono disabled:bg-paper disabled:text-ink/50"
           />
+          {modeEdit && (
+            <span className="text-xs text-ink/40 block mt-1.5">
+              Tidak bisa diubah di sini. Gunakan menu Transaksi Stok
+              (barang masuk/keluar), Transfer, atau Stok Opname supaya
+              perubahan tercatat di riwayat.
+            </span>
+          )}
         </Field>
 
         <Field label="Satuan">
