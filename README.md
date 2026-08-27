@@ -41,6 +41,8 @@ Demo: [stok-app-fawn.vercel.app](https://stok-app-fawn.vercel.app)
    | 10 | `supabase/stok_opname.sql` | Tabel `stok_opname` + function `catat_stok_opname` (rekonsiliasi fisik, otomatis catat penyesuaian kalau ada selisih). |
    | 11 | `supabase/migrasi_superadmin.sql` | Tambah peran `superadmin` (di atas admin) + function `saya_superadmin()`. **Jalankan setelah** `role-policies.sql` dan `migrasi_perbaikan_peran.sql` (lihat bagian [Role & Akses](#role--akses)). |
    | 12 | `supabase/migrasi_log_aktivitas_barang.sql` | Tabel `log_aktivitas_barang` + trigger otomatis untuk mencatat siapa menambah/mengurangi/menghapus barang. **Jalankan setelah** `migrasi_cabang.sql` dan `migrasi_superadmin.sql` (butuh `saya_admin()`). |
+   | 13 | `supabase/migrasi_kunci_jumlah_manual.sql` | Kunci kolom `stok.jumlah` supaya tidak bisa diubah manual lewat form Ubah Barang — hanya lewat jalur resmi (transaksi/transfer/opname/pembatalan). **Jalankan setelah** semua file transaksi/transfer/opname di atas. |
+   | 14 | `supabase/migrasi_tanggal_manual_transaksi.sql` | Izinkan atur tanggal & waktu manual saat mencatat transaksi stok masuk/keluar (mis. transaksi minggu lalu yang lupa dicatat), maksimal mundur 30 hari dan tidak boleh di masa depan. **Jalankan setelah** `migrasi_kunci_jumlah_manual.sql`. |
 
 3. (Opsional) Jalankan `supabase/seed.sql` untuk mengisi beberapa data contoh, biar Dasbor & Daftar Stok langsung terisi.
 4. Buka **Project Settings > API**, salin **Project URL**, **anon public key**, dan **service_role key**.

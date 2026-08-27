@@ -375,6 +375,13 @@ export function useTransaksiStok(produkId: string) {
       catatan?: string,
       pihak?: string,
       noReferensi?: string,
+      // ISO date string. Opsional -- kosong berarti pakai waktu
+      // sekarang (perilaku lama), diisi berarti user mengatur manual
+      // tanggal & waktu transaksi (lihat
+      // supabase/migrasi_tanggal_manual_transaksi.sql untuk validasi
+      // di sisi database: tidak boleh masa depan, maksimal mundur 30
+      // hari).
+      dibuatPada?: string,
     ) => {
       const { error } = await supabase.rpc("catat_transaksi_stok", {
         p_produk_id: produkId,
@@ -384,6 +391,7 @@ export function useTransaksiStok(produkId: string) {
         p_catatan: catatan?.trim() ? catatan.trim() : null,
         p_pihak: pihak?.trim() ? pihak.trim() : null,
         p_no_referensi: noReferensi?.trim() ? noReferensi.trim() : null,
+        p_dibuat_pada: dibuatPada ? dibuatPada : null,
       });
 
       if (error) {

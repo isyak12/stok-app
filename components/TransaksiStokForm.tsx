@@ -14,8 +14,23 @@ type Props = {
     catatan?: string,
     pihak?: string,
     noReferensi?: string,
+    dibuatPada?: string,
   ) => Promise<void>;
 };
+
+// Batas mundur tanggal manual (harus sinkron dengan validasi di
+// supabase/migrasi_tanggal_manual_transaksi.sql).
+const MAKS_MUNDUR_HARI = 30;
+
+// Format Date -> value yang dipahami <input type="datetime-local">
+// ("YYYY-MM-DDTHH:mm"), memakai waktu LOKAL (bukan UTC) supaya yang
+// ditampilkan ke user sesuai jam di perangkatnya.
+function keDatetimeLocal(d: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours(),
+  )}:${pad(d.getMinutes())}`;
+}
 
 export default function TransaksiStokForm({ cabangDefaultId, onCatat }: Props) {
   const { data: daftarCabang, siap: cabangSiap } = useCabang();
@@ -71,6 +86,9 @@ function KartuTransaksi({
   const [catatan, setCatatan] = useState("");
   const [pihak, setPihak] = useState("");
   const [noReferensi, setNoReferensi] = useState("");
+  // Default: waktu sekarang, tapi bisa diubah manual (mis. mencatat
+  // transaksi yang sebenarnya terjadi beberapa hari lalu).
+  const [dibuatPada, setDibuatPada] = useState(() => keDatetimeLocal(new Date()));
   const [menyimpan, setMenyimpan] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,14 +106,41 @@ function KartuTransaksi({
       setError("Pilih cabang terlebih dahulu.");
       return;
     }
+    if (!dibuatPada) {
+      setError("Tanggal & waktu transaksi harus diisi.");
+      return;
+    }
+    const tanggalDipilih = new Date(dibuatPada);
+    const sekarang = new Date();
+    const batasMundur = new Date(sekarang);
+    batasMundur.setDate(batasMundur.getDate() - MAKS_MUNDUR_HARI);
+    if (tanggalDipilih > sekarang) {
+      setError("Tanggal & waktu transaksi tidak boleh di masa depan.");
+      return;
+    }
+    if (tanggalDipilih < batasMundur) {
+      setError(
+        `Tanggal & waktu transaksi paling jauh mundur ${MAKS_MUNDUR_HARI} hari dari sekarang.`,
+      );
+      return;
+    }
     setError(null);
     setMenyimpan(true);
     try {
-      await onCatat(tipe, jumlah, cabangId, catatan, pihak, noReferensi);
+      await onCatat(
+        tipe,
+        jumlah,
+        cabangId,
+        catatan,
+        pihak,
+        noReferensi,
+        tanggalDipilih.toISOString(),
+      );
       setJumlah("");
       setCatatan("");
       setPihak("");
       setNoReferensi("");
+      setDibuatPada(keDatetimeLocal(new Date()));
     } catch (err) {
       setError(
         err instanceof Error
@@ -170,6 +215,24 @@ function KartuTransaksi({
           placeholder="cth. No. Nota / Invoice / PO"
           className="input font-mono"
         />
+      </label>
+
+      <label className="block mb-4">
+        <span className="text-[11px] uppercase tracking-wider text-ink/50 block mb-1.5">
+          Tanggal & Waktu
+        </span>
+        <input
+          type="datetime-local"
+          required
+          value={dibuatPada}
+          max={keDatetimeLocal(new Date())}
+          onChange={(e) => setDibuatPada(e.target.value)}
+          className="input font-mono"
+        />
+        <span className="text-[11px] text-ink/40 block mt-1">
+          Default waktu sekarang. Bisa diubah mundur maks. {MAKS_MUNDUR_HARI}{" "}
+          hari untuk mencatat transaksi yang terlewat.
+        </span>
       </label>
 
       <label className="block mb-5">
