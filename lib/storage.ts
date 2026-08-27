@@ -459,6 +459,8 @@ type BarisTransferStok = {
   dibatalkan_oleh_nama: string | null;
   dibatalkan_pada: string | null;
   alasan_pembatalan: string | null;
+  bukti_foto_url: string | null;
+  catatan_penerimaan: string | null;
 };
 
 function keTransferStok(baris: BarisTransferStok): TransferStok {
@@ -477,6 +479,8 @@ function keTransferStok(baris: BarisTransferStok): TransferStok {
     dibatalkanOlehNama: baris.dibatalkan_oleh_nama,
     dibatalkanPada: baris.dibatalkan_pada,
     alasanPembatalan: baris.alasan_pembatalan,
+    buktiFotoUrl: baris.bukti_foto_url,
+    catatanPenerimaan: baris.catatan_penerimaan,
   };
 }
 
@@ -496,7 +500,7 @@ export function useTransferStok(produkId: string) {
     const { data: baris, error } = await supabase
       .from("transfer_stok")
       .select(
-        "id, produk_id, dari_cabang_id, ke_cabang_id, jumlah, catatan, dibuat_pada, status, dibuat_oleh_nama, diterima_oleh_nama, diterima_pada, dibatalkan_oleh_nama, dibatalkan_pada, alasan_pembatalan",
+        "id, produk_id, dari_cabang_id, ke_cabang_id, jumlah, catatan, dibuat_pada, status, dibuat_oleh_nama, diterima_oleh_nama, diterima_pada, dibatalkan_oleh_nama, dibatalkan_pada, alasan_pembatalan, bukti_foto_url, catatan_penerimaan",
       )
       .eq("produk_id", produkId)
       .order("dibuat_pada", { ascending: false });
@@ -542,13 +546,40 @@ export function useTransferStok(produkId: string) {
   );
 
   // Konfirmasi barang sudah sampai di cabang tujuan: baru di titik ini
-  // stok cabang tujuan bertambah (lihat supabase/mutasi_detail.sql,
-  // function konfirmasi_terima_transfer). Sebelum dikonfirmasi, status
-  // transfer adalah 'terkirim' dan stok tujuan belum berubah.
+  // stok cabang tujuan bertambah (lihat supabase/mutasi_detail.sql &
+  // supabase/migrasi_bukti_penerimaan.sql, function
+  // konfirmasi_terima_transfer). Sebelum dikonfirmasi, status transfer
+  // adalah 'terkirim' dan stok tujuan belum berubah.
+  //
+  // Foto bukti penerimaan WAJIB (ditegakkan juga di sisi database).
+  // Diupload ke bucket "bukti-transfer" dulu, baru URL publiknya
+  // dikirim ke function konfirmasi_terima_transfer.
   const konfirmasiTerima = useCallback(
-    async (transferId: string) => {
+    async (transferId: string, fotoBukti: File, catatanPenerimaan?: string) => {
+      const ekstensi = fotoBukti.name.split(".").pop() || "jpg";
+      const namaFile = `${transferId}-${Date.now()}.${ekstensi}`;
+
+      const { error: errorUpload } = await supabase.storage
+        .from("bukti-transfer")
+        .upload(namaFile, fotoBukti, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (errorUpload) {
+        throw new Error(`Gagal mengunggah foto bukti: ${errorUpload.message}`);
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("bukti-transfer").getPublicUrl(namaFile);
+
       const { error } = await supabase.rpc("konfirmasi_terima_transfer", {
         p_transfer_id: transferId,
+        p_bukti_foto_url: publicUrl,
+        p_catatan_penerimaan: catatanPenerimaan?.trim()
+          ? catatanPenerimaan.trim()
+          : null,
       });
 
       if (error) {

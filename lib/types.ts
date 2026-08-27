@@ -115,6 +115,14 @@ export type TransferStok = {
   dibatalkanOlehNama: string | null;
   dibatalkanPada: string | null; // ISO date string, null kalau tidak dibatalkan
   alasanPembatalan: string | null;
+  // Bukti foto penerimaan barang — wajib diisi saat konfirmasi terima
+  // (lihat supabase/migrasi_bukti_penerimaan.sql). Null untuk transfer
+  // lama yang dikonfirmasi sebelum fitur ini ada.
+  buktiFotoUrl: string | null;
+  // Catatan dari staf cabang tujuan saat konfirmasi terima — terpisah
+  // dari `catatan` yang diisi staf cabang asal saat mengirim, karena
+  // kondisi barang saat sampai bisa beda dari yang tercatat saat kirim.
+  catatanPenerimaan: string | null;
 };
 
 // Nilai stok yang spesifik untuk satu kombinasi produk + cabang.
