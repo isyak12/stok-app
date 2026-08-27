@@ -6,6 +6,7 @@ import {
   Barang,
   BarangInput,
   Cabang,
+  LogAktivitasBarang,
   MutasiStok,
   StokCabangValues,
   StokOpname,
@@ -724,4 +725,81 @@ export function useStokOpname(produkId: string) {
   );
 
   return { data, siap, error, catat, muatUlang };
+}
+
+// Bentuk baris tabel log_aktivitas_barang dari Supabase
+type BarisLogAktivitasBarang = {
+  id: string;
+  aksi: LogAktivitasBarang["aksi"];
+  produk_id: string | null;
+  produk_nama: string;
+  produk_sku: string;
+  cabang_id: string | null;
+  cabang_nama: string | null;
+  jumlah: number | null;
+  keterangan: string | null;
+  dilakukan_oleh_nama: string | null;
+  dilakukan_pada: string;
+};
+
+function keLogAktivitasBarang(
+  baris: BarisLogAktivitasBarang,
+): LogAktivitasBarang {
+  return {
+    id: baris.id,
+    aksi: baris.aksi,
+    produkId: baris.produk_id,
+    produkNama: baris.produk_nama,
+    produkSku: baris.produk_sku,
+    cabangId: baris.cabang_id,
+    cabangNama: baris.cabang_nama,
+    jumlah: baris.jumlah,
+    keterangan: baris.keterangan,
+    dilakukanOlehNama: baris.dilakukan_oleh_nama,
+    dilakukanPada: baris.dilakukan_pada,
+  };
+}
+
+/**
+ * Hook untuk halaman "Log Aktivitas": jejak audit SIAPA menambahkan
+ * barang baru, menghapus barang, atau mengurangi jumlah stok --
+ * lintas semua produk (bukan per-produk seperti useTransaksiStok).
+ *
+ * Data diisi otomatis oleh trigger database (lihat
+ * supabase/migrasi_log_aktivitas_barang.sql), bukan ditulis dari
+ * sini -- hook ini murni baca. Dibatasi RLS hanya untuk admin ke atas
+ * (saya_admin()), sama seperti pembatasan menu di Sidebar.
+ */
+export function useLogAktivitasBarang(limit = 200) {
+  const [data, setData] = useState<LogAktivitasBarang[]>([]);
+  const [siap, setSiap] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const muatUlang = useCallback(async () => {
+    setSiap(false);
+    const { data: baris, error } = await supabase
+      .from("log_aktivitas_barang")
+      .select(
+        "id, aksi, produk_id, produk_nama, produk_sku, cabang_id, cabang_nama, jumlah, keterangan, dilakukan_oleh_nama, dilakukan_pada",
+      )
+      .order("dilakukan_pada", { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      setError(error.message);
+      setSiap(true);
+      return;
+    }
+    setError(null);
+    setData(
+      ((baris ?? []) as BarisLogAktivitasBarang[]).map(keLogAktivitasBarang),
+    );
+    setSiap(true);
+  }, [limit]);
+
+  useEffect(() => {
+    muatUlang();
+  }, [muatUlang]);
+
+  return { data, siap, error, muatUlang };
 }

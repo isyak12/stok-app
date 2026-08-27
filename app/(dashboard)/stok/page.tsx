@@ -5,6 +5,7 @@ import { useStok } from "@/lib/storage";
 import { useUser } from "@/lib/useUser";
 import StokTable from "@/components/StokTable";
 import { PackagePlus } from "lucide-react";
+import { adalahAdminAtauLebih } from "@/lib/role";
 
 export default function DaftarStokPage() {
   const { data, siap, error, hapus } = useStok();
@@ -24,7 +25,7 @@ export default function DaftarStokPage() {
             {data.length} jenis barang tercatat.
           </p>
         </div>
-        {peran === "admin" && (
+        {adalahAdminAtauLebih(peran) && (
           <Link
             href="/stok/tambah"
             className="flex items-center gap-2 px-4 py-2.5 bg-ink text-paper text-sm font-medium rounded-sm hover:bg-ink/90 transition-colors whitespace-nowrap"

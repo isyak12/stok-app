@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import { createClient } from "./supabase/client";
-import { peranDariUser, Peran } from "./role";
+import { peranDariUser, Peran, adalahAdminAtauLebih } from "./role";
 
 const supabase = createClient();
 
@@ -46,5 +46,11 @@ export function useUser() {
 
   const peran: Peran = peranDariUser(user);
 
-  return { user, peran, siap, isAdmin: peran === "admin" };
+  return {
+    user,
+    peran,
+    siap,
+    isAdmin: adalahAdminAtauLebih(peran),
+    isSuperadmin: peran === "superadmin",
+  };
 }

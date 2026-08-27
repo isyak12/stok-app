@@ -1,6 +1,13 @@
 import { User } from "@supabase/supabase-js";
 
-export type Peran = "admin" | "staf";
+// "superadmin" ditambahkan di atas "admin": bisa melakukan semua hal
+// yang admin biasa bisa (lihat saya_admin() di
+// supabase/migrasi_superadmin.sql -- superadmin dihitung sebagai admin
+// di semua RLS policy & trigger yang sudah ada), DITAMBAH kewenangan
+// khusus mengelola akun pengguna (bikin user baru & menentukan
+// perannya). Sengaja dipisah dari "admin" biasa supaya admin biasa
+// tidak otomatis bisa membuat akun admin lain.
+export type Peran = "superadmin" | "admin" | "staf";
 
 /**
  * Baca peran dari app_metadata Supabase Auth (BUKAN user_metadata).
@@ -19,9 +26,23 @@ export type Peran = "admin" | "staf";
  */
 export function peranDariUser(user: User | null | undefined): Peran {
   const nilai = user?.app_metadata?.peran;
-  return nilai === "admin" ? "admin" : "staf";
+  if (nilai === "superadmin") return "superadmin";
+  if (nilai === "admin") return "admin";
+  return "staf";
 }
 
 export function labelPeran(peran: Peran): string {
-  return peran === "admin" ? "Admin" : "Staf Gudang";
+  if (peran === "superadmin") return "Superadmin";
+  if (peran === "admin") return "Admin";
+  return "Staf Gudang";
+}
+
+/**
+ * true untuk "admin" ATAU "superadmin". Dipakai di UI untuk fitur yang
+ * selama ini dibatasi ke admin (mis. tambah/hapus barang) -- superadmin
+ * otomatis mewarisi semuanya. Cocok dengan saya_admin() di sisi
+ * database (supabase/migrasi_superadmin.sql).
+ */
+export function adalahAdminAtauLebih(peran: Peran): boolean {
+  return peran === "admin" || peran === "superadmin";
 }

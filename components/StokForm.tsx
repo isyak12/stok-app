@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BarangInput, Barang } from "@/lib/types";
 import { useCabang, useStokPerCabang } from "@/lib/storage";
-import { Peran } from "@/lib/role";
+import { Peran, adalahAdminAtauLebih } from "@/lib/role";
 import { Lock } from "lucide-react";
 
 type Props = {
@@ -35,7 +35,7 @@ export default function StokForm({
   // Di mode Tambah, seluruh form tetap dianggap boleh diisi -- halaman
   // pemanggilnya (stok/tambah) sudah memblokir akses staf ke mode ini
   // lebih dulu.
-  const kunciMaster = modeEdit && peran !== "admin";
+  const kunciMaster = modeEdit && !adalahAdminAtauLebih(peran);
   const { data: daftarCabang, siap: cabangSiap } = useCabang();
   // Stok per-cabang produk ini (kosong kalau mode Tambah, karena belum ada id)
   const { data: stokPerCabang, siap: stokPerCabangSiap } = useStokPerCabang(

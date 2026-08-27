@@ -3,7 +3,16 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { LayoutGrid, Boxes, PackagePlus, LogOut, Menu, X } from "lucide-react";
+import {
+  LayoutGrid,
+  Boxes,
+  PackagePlus,
+  LogOut,
+  Menu,
+  X,
+  Users,
+  History,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { labelPeran, Peran } from "@/lib/role";
 
@@ -14,7 +23,19 @@ const NAV = [
     href: "/stok/tambah",
     label: "Tambah Barang",
     icon: PackagePlus,
-    hanyaAdmin: true,
+    perananBoleh: ["admin", "superadmin"] as Peran[],
+  },
+  {
+    href: "/log-aktivitas",
+    label: "Log Aktivitas",
+    icon: History,
+    perananBoleh: ["admin", "superadmin"] as Peran[],
+  },
+  {
+    href: "/pengguna",
+    label: "Kelola Pengguna",
+    icon: Users,
+    perananBoleh: ["superadmin"] as Peran[],
   },
 ];
 
@@ -37,7 +58,7 @@ export default function Sidebar({
   }
 
   const navTerlihat = NAV.filter(
-    (item) => !item.hanyaAdmin || peran === "admin",
+    (item) => !item.perananBoleh || item.perananBoleh.includes(peran),
   );
 
   return (
