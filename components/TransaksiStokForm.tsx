@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { ArrowDownToLine, ArrowUpFromLine, X } from "lucide-react";
 import { TipeTransaksi } from "@/lib/types";
-import { useCabang } from "@/lib/storage";
+import { useCabang, useStokPerCabang } from "@/lib/storage";
 import { pesanError } from "@/lib/error";
 
 type Props = {
+  produkId: string;
   cabangDefaultId?: string;
   onCatat: (
     tipe: TipeTransaksi,
@@ -34,13 +35,21 @@ function keDatetimeLocal(d: Date) {
   )}:${pad(d.getMinutes())}`;
 }
 
-export default function TransaksiStokForm({ cabangDefaultId, onCatat }: Props) {
+export default function TransaksiStokForm({
+  produkId,
+  cabangDefaultId,
+  onCatat,
+}: Props) {
   const {
     data: daftarCabang,
     siap: cabangSiap,
     error: errorCabang,
   } = useCabang();
+  const { data: stokPerCabang, siap: stokPerCabangSiap } =
+    useStokPerCabang(produkId);
   const [cabangId, setCabangId] = useState(cabangDefaultId ?? "");
+  const cabangBelumPunyaStok =
+    stokPerCabangSiap && cabangId ? !stokPerCabang[cabangId] : false;
 
   useEffect(() => {
     if (cabangDefaultId) {
@@ -72,6 +81,13 @@ export default function TransaksiStokForm({ cabangDefaultId, onCatat }: Props) {
         {errorCabang && (
           <span className="text-xs text-rust block mt-1.5">
             Gagal memuat daftar cabang: {errorCabang}
+          </span>
+        )}
+        {!errorCabang && cabangBelumPunyaStok && (
+          <span className="text-xs text-ink/40 block mt-1.5">
+            Barang ini belum punya stok di cabang ini — baris stok baru
+            (jumlah awal 0) akan dibuat otomatis saat "Stok Masuk"
+            disimpan.
           </span>
         )}
       </label>

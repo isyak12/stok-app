@@ -62,6 +62,7 @@ export default function TransaksiStokPage() {
           </Link>
 
           <TransaksiStokForm
+            produkId={barang.id}
             cabangDefaultId={barang.cabangId}
             onCatat={catat}
           />
