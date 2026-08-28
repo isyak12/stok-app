@@ -130,6 +130,11 @@ export type TransferStok = {
   // (lihat supabase/migrasi_bukti_penerimaan.sql). Null untuk transfer
   // lama yang dikonfirmasi sebelum fitur ini ada.
   buktiFotoUrl: string | null;
+  // Bukti foto kondisi barang SEBELUM dikirim dari cabang asal —
+  // wajib diisi saat mencatat transfer baru (lihat
+  // supabase/migrasi_bukti_pengiriman.sql). Null untuk transfer lama
+  // yang dicatat sebelum fitur ini ada.
+  buktiFotoUrlKirim: string | null;
   // Catatan dari staf cabang tujuan saat konfirmasi terima — terpisah
   // dari `catatan` yang diisi staf cabang asal saat mengirim, karena
   // kondisi barang saat sampai bisa beda dari yang tercatat saat kirim.

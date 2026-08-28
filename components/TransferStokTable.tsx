@@ -152,7 +152,7 @@ export default function TransferStokTable({
 
   return (
     <div className="bg-white border border-ink/10 rounded-sm overflow-x-auto">
-      <table className="w-full min-w-[860px] text-sm">
+      <table className="w-full min-w-[940px] text-sm">
         <thead>
           <tr className="text-left text-[11px] uppercase tracking-wider text-ink/50 border-b border-ink/10 bg-paper/60">
             <th className="px-4 py-3 font-medium">Tanggal</th>
@@ -166,7 +166,8 @@ export default function TransferStokTable({
             <th className="px-4 py-3 font-medium hidden md:table-cell">
               Diterima oleh
             </th>
-            <th className="px-4 py-3 font-medium">Bukti</th>
+            <th className="px-4 py-3 font-medium">Bukti Kirim</th>
+            <th className="px-4 py-3 font-medium">Bukti Terima</th>
             <th className="px-4 py-3 font-medium">Catatan</th>
             {(onKonfirmasiTerima || onBatalkan) && (
               <th className="px-4 py-3 font-medium text-right">Aksi</th>
@@ -230,6 +231,30 @@ export default function TransferStokTable({
                       </span>
                     ) : (
                       t.diterimaOlehNama || <span className="text-ink/30">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {t.buktiFotoUrlKirim ? (
+                      <button
+                        type="button"
+                        onClick={() => setFotoDiperbesar(t.buktiFotoUrlKirim)}
+                        className="block w-10 h-10 rounded-sm overflow-hidden border border-ink/15 hover:border-ink/40 transition-colors"
+                        title="Lihat foto bukti sebelum kirim"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={t.buktiFotoUrlKirim}
+                          alt="Bukti sebelum kirim"
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ) : (
+                      <span
+                        className="inline-flex items-center gap-1 text-ink/30 text-xs"
+                        title="Transfer ini dicatat sebelum fitur bukti foto kirim ada"
+                      >
+                        <ImageOff size={14} />
+                      </span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -301,7 +326,7 @@ export default function TransferStokTable({
                 </tr>
                 {formTerbuka && (
                   <tr className="border-b border-ink/5 bg-paper/40">
-                    <td colSpan={10} className="px-4 py-4">
+                    <td colSpan={11} className="px-4 py-4">
                       <div className="max-w-lg space-y-3">
                         <p className="text-xs text-ink/60">
                           Unggah foto bukti barang sudah diterima di{" "}
@@ -367,7 +392,7 @@ export default function TransferStokTable({
           {data.length === 0 && (
             <tr>
               <td
-                colSpan={onKonfirmasiTerima || onBatalkan ? 10 : 9}
+                colSpan={onKonfirmasiTerima || onBatalkan ? 11 : 10}
                 className="px-4 py-10 text-center text-ink/40 text-sm"
               >
                 Belum ada transfer stok untuk barang ini.
@@ -385,7 +410,7 @@ export default function TransferStokTable({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={fotoDiperbesar}
-            alt="Bukti penerimaan (diperbesar)"
+            alt="Bukti transfer (diperbesar)"
             className="max-w-full max-h-full rounded-sm"
           />
         </div>

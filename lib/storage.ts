@@ -618,6 +618,7 @@ type BarisTransferStok = {
   alasan_pembatalan: string | null;
   bukti_foto_url: string | null;
   catatan_penerimaan: string | null;
+  bukti_foto_url_kirim: string | null;
 };
 
 function keTransferStok(baris: BarisTransferStok): TransferStok {
@@ -638,6 +639,7 @@ function keTransferStok(baris: BarisTransferStok): TransferStok {
     alasanPembatalan: baris.alasan_pembatalan,
     buktiFotoUrl: baris.bukti_foto_url,
     catatanPenerimaan: baris.catatan_penerimaan,
+    buktiFotoUrlKirim: baris.bukti_foto_url_kirim,
   };
 }
 
@@ -657,7 +659,7 @@ export function useTransferStok(produkId: string) {
     const { data: baris, error } = await supabase
       .from("transfer_stok")
       .select(
-        "id, produk_id, dari_cabang_id, ke_cabang_id, jumlah, catatan, dibuat_pada, status, dibuat_oleh_nama, diterima_oleh_nama, diterima_pada, dibatalkan_oleh_nama, dibatalkan_pada, alasan_pembatalan, bukti_foto_url, catatan_penerimaan",
+        "id, produk_id, dari_cabang_id, ke_cabang_id, jumlah, catatan, dibuat_pada, status, dibuat_oleh_nama, diterima_oleh_nama, diterima_pada, dibatalkan_oleh_nama, dibatalkan_pada, alasan_pembatalan, bukti_foto_url, catatan_penerimaan, bukti_foto_url_kirim",
       )
       .eq("produk_id", produkId)
       .order("dibuat_pada", { ascending: false });
@@ -676,18 +678,43 @@ export function useTransferStok(produkId: string) {
     muatUlang();
   }, [muatUlang]);
 
+  // Foto bukti kondisi barang SEBELUM dikirim WAJIB diisi (ditegakkan
+  // juga di sisi database, lihat supabase/migrasi_bukti_pengiriman.sql).
+  // Diupload ke bucket "bukti-transfer" dulu (bucket yang sama dipakai
+  // foto bukti penerimaan, dibedakan lewat prefix nama file), baru URL
+  // publiknya dikirim ke function catat_transfer_stok.
   const catat = useCallback(
     async (
       dariCabangId: string,
       keCabangId: string,
       jumlah: number,
+      fotoBuktiKirim: File,
       catatan?: string,
     ) => {
+      const ekstensi = fotoBuktiKirim.name.split(".").pop() || "jpg";
+      const namaFile = `kirim-${produkId}-${Date.now()}.${ekstensi}`;
+
+      const { error: errorUpload } = await supabase.storage
+        .from("bukti-transfer")
+        .upload(namaFile, fotoBuktiKirim, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (errorUpload) {
+        throw new Error(`Gagal mengunggah foto bukti: ${errorUpload.message}`);
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("bukti-transfer").getPublicUrl(namaFile);
+
       const { error } = await supabase.rpc("catat_transfer_stok", {
         p_produk_id: produkId,
         p_dari_cabang_id: dariCabangId,
         p_ke_cabang_id: keCabangId,
         p_jumlah: jumlah,
+        p_bukti_foto_url_kirim: publicUrl,
         p_catatan: catatan?.trim() ? catatan.trim() : null,
       });
 

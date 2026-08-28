@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRightLeft } from "lucide-react";
 import { useCabang } from "@/lib/storage";
 import { pesanError } from "@/lib/error";
@@ -11,9 +11,16 @@ type Props = {
     dariCabangId: string,
     keCabangId: string,
     jumlah: number,
+    fotoBuktiKirim: File,
     catatan?: string,
   ) => Promise<void>;
 };
+
+// Batas ukuran file foto bukti, dijaga di sisi client supaya user
+// dapat pesan error yang jelas sebelum upload dicoba (bucket Supabase
+// Storage sendiri tidak dibatasi ukurannya lewat migrasi ini). Sama
+// dengan batas foto bukti penerimaan di TransferStokTable.
+const MAKS_UKURAN_FOTO_MB = 5;
 
 export default function TransferStokForm({ cabangDefaultId, onCatat }: Props) {
   const {
@@ -25,10 +32,46 @@ export default function TransferStokForm({ cabangDefaultId, onCatat }: Props) {
   const [keCabangId, setKeCabangId] = useState("");
   const [jumlah, setJumlah] = useState<number | "">("");
   const [catatan, setCatatan] = useState("");
+  const [fotoBukti, setFotoBukti] = useState<File | null>(null);
+  const [previewFoto, setPreviewFoto] = useState<string | null>(null);
   const [menyimpan, setMenyimpan] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const cabangTujuanList = daftarCabang.filter((c) => c.id !== dariCabangId);
+
+  // Bersihkan object URL preview saat komponen unmount, supaya tidak
+  // bocor memori kalau user pindah halaman dengan preview masih ada.
+  const previewFotoRef = useRef(previewFoto);
+  previewFotoRef.current = previewFoto;
+  useEffect(() => {
+    return () => {
+      if (previewFotoRef.current) URL.revokeObjectURL(previewFotoRef.current);
+    };
+  }, []);
+
+  function pilihFoto(file: File | null) {
+    if (previewFoto) URL.revokeObjectURL(previewFoto);
+    if (!file) {
+      setFotoBukti(null);
+      setPreviewFoto(null);
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setError("File harus berupa gambar (JPG, PNG, dsb).");
+      setFotoBukti(null);
+      setPreviewFoto(null);
+      return;
+    }
+    if (file.size > MAKS_UKURAN_FOTO_MB * 1024 * 1024) {
+      setError(`Ukuran foto maksimal ${MAKS_UKURAN_FOTO_MB}MB.`);
+      setFotoBukti(null);
+      setPreviewFoto(null);
+      return;
+    }
+    setError(null);
+    setFotoBukti(file);
+    setPreviewFoto(URL.createObjectURL(file));
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -44,12 +87,17 @@ export default function TransferStokForm({ cabangDefaultId, onCatat }: Props) {
       setError("Jumlah harus lebih besar dari 0.");
       return;
     }
+    if (!fotoBukti) {
+      setError("Foto bukti sebelum kirim wajib diunggah.");
+      return;
+    }
     setError(null);
     setMenyimpan(true);
     try {
-      await onCatat(dariCabangId, keCabangId, jumlah, catatan);
+      await onCatat(dariCabangId, keCabangId, jumlah, fotoBukti, catatan);
       setJumlah("");
       setCatatan("");
+      pilihFoto(null);
     } catch (err) {
       setError(pesanError(err, "Gagal mencatat transfer stok. Coba lagi."));
     } finally {
@@ -142,6 +190,36 @@ export default function TransferStokForm({ cabangDefaultId, onCatat }: Props) {
         />
       </label>
 
+      <div className="block mb-4">
+        <span className="text-[11px] uppercase tracking-wider text-ink/50 block mb-1.5">
+          Foto Bukti Sebelum Kirim
+        </span>
+        <p className="text-xs text-ink/50 mb-2">
+          Foto kondisi/jumlah barang sebelum dikirim dari cabang asal. Wajib
+          diisi.
+        </p>
+        <div className="flex items-start gap-3">
+          <label className="px-3 py-1.5 border border-ink/15 text-xs font-medium rounded-sm hover:bg-paper cursor-pointer whitespace-nowrap">
+            Pilih Foto
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={(e) => pilihFoto(e.target.files?.[0] ?? null)}
+            />
+          </label>
+          {previewFoto && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={previewFoto}
+              alt="Pratinjau bukti sebelum kirim"
+              className="w-16 h-16 object-cover rounded-sm border border-ink/15"
+            />
+          )}
+        </div>
+      </div>
+
       <label className="block mb-5">
         <span className="text-[11px] uppercase tracking-wider text-ink/50 block mb-1.5">
           Catatan (opsional)
@@ -156,7 +234,7 @@ export default function TransferStokForm({ cabangDefaultId, onCatat }: Props) {
 
       <button
         type="submit"
-        disabled={menyimpan}
+        disabled={menyimpan || !fotoBukti}
         className="px-5 py-2.5 bg-ink text-paper text-sm font-medium rounded-sm hover:bg-ink/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {menyimpan ? "Memproses..." : "Transfer Stok"}
