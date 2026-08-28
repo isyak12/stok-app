@@ -19,9 +19,18 @@ type Props = {
   data: Barang[];
   onHapus: (id: string) => Promise<void>;
   peran?: Peran;
+  // Kalau diisi, tabel hanya menampilkan barang yang punya baris
+  // stok di cabang ini, dan kolom Jumlah/Lokasi memakai angka
+  // khusus cabang tersebut (bukan gabungan semua cabang).
+  cabangId?: string;
 };
 
-export default function StokTable({ data, onHapus, peran = "staf" }: Props) {
+export default function StokTable({
+  data,
+  onHapus,
+  peran = "staf",
+  cabangId,
+}: Props) {
   const [q, setQ] = useState("");
   const [kategori, setKategori] = useState("Semua");
   const bolehHapus = adalahAdminAtauLebih(peran);
@@ -32,14 +41,34 @@ export default function StokTable({ data, onHapus, peran = "staf" }: Props) {
   );
 
   const hasil = useMemo(() => {
-    return data.filter((b) => {
-      const cocokTeks =
-        b.nama.toLowerCase().includes(q.toLowerCase()) ||
-        b.sku.toLowerCase().includes(q.toLowerCase());
-      const cocokKategori = kategori === "Semua" || b.kategori === kategori;
-      return cocokTeks && cocokKategori;
-    });
-  }, [data, q, kategori]);
+    return data
+      .filter((b) => {
+        const cocokTeks =
+          b.nama.toLowerCase().includes(q.toLowerCase()) ||
+          b.sku.toLowerCase().includes(q.toLowerCase());
+        const cocokKategori = kategori === "Semua" || b.kategori === kategori;
+        // Kalau cabang tertentu dipilih, barang yang belum pernah
+        // punya baris stok di cabang itu disembunyikan — tidak ada
+        // gunanya ditampilkan dengan jumlah 0 yang bisa disalahartikan
+        // sebagai "stok habis" padahal memang belum pernah distok
+        // di sana.
+        const cocokCabang =
+          !cabangId || b.stokPerCabang.some((s) => s.cabangId === cabangId);
+        return cocokTeks && cocokKategori && cocokCabang;
+      })
+      .map((b) => {
+        if (!cabangId) {
+          return { barang: b, jumlah: b.jumlah, lokasi: b.lokasi, rendah: b.stokRendah };
+        }
+        const baris = b.stokPerCabang.find((s) => s.cabangId === cabangId);
+        return {
+          barang: b,
+          jumlah: baris?.jumlah ?? 0,
+          lokasi: baris?.lokasi ?? "",
+          rendah: baris?.rendah ?? false,
+        };
+      });
+  }, [data, q, kategori, cabangId]);
 
   return (
     <div>
@@ -79,7 +108,7 @@ export default function StokTable({ data, onHapus, peran = "staf" }: Props) {
                 Kategori
               </th>
               <th className="px-4 py-3 font-medium text-right">
-                Jumlah (semua cabang)
+                {cabangId ? "Jumlah" : "Jumlah (semua cabang)"}
               </th>
               <th className="px-4 py-3 font-medium text-right hidden sm:table-cell">
                 Harga Jual
@@ -91,8 +120,7 @@ export default function StokTable({ data, onHapus, peran = "staf" }: Props) {
             </tr>
           </thead>
           <tbody>
-            {hasil.map((b) => {
-              const rendah = b.stokRendah;
+            {hasil.map(({ barang: b, jumlah, lokasi, rendah }) => {
               return (
                 <tr
                   key={b.id}
@@ -114,14 +142,14 @@ export default function StokTable({ data, onHapus, peran = "staf" }: Props) {
                       }
                     >
                       {rendah && <TriangleAlert size={13} />}
-                      {b.jumlah} {b.satuan}
+                      {jumlah} {b.satuan}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right font-mono hidden sm:table-cell">
                     {formatRupiah(b.hargaJual)}
                   </td>
                   <td className="px-4 py-3 text-ink/70 hidden md:table-cell">
-                    {b.lokasi}
+                    {lokasi}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">

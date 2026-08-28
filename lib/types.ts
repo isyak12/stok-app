@@ -25,6 +25,7 @@ export type Barang = {
     jumlah: number;
     stokMinimum: number;
     rendah: boolean;
+    lokasi: string;
   }[];
 };
 

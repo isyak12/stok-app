@@ -74,6 +74,7 @@ function keBarang(baris: BarisProduk): Barang {
       jumlah: s.jumlah,
       stokMinimum: s.stok_minimum,
       rendah: s.jumlah <= s.stok_minimum,
+      lokasi: s.lokasi,
     })),
   };
 }
