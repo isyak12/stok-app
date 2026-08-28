@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { createClient } from "./supabase/client";
 import {
   Barang,
@@ -556,6 +556,17 @@ type BarisTransferMenunggu = {
 export function useTransferMenunggu() {
   const [data, setData] = useState<TransferMenunggu[]>([]);
   const [siap, setSiap] = useState(false);
+  // PENTING: nama channel Realtime HARUS unik per instance komponen.
+  // Hook ini dipanggil lebih dari sekali secara bersamaan (Sidebar
+  // me-render <NotifikasiTransferMasuk /> dua kali -- versi mobile
+  // & desktop -- yang disembunyikan lewat CSS "hidden", BUKAN
+  // unmount). Kalau nama channel sama persis di semua instance,
+  // Supabase realtime-js menganggapnya topic yang sama dan instance
+  // kedua akan gagal .subscribe() dengan error "cannot add
+  // postgres_changes callbacks ... after subscribe()" -- ini yang
+  // bikin seluruh halaman crash (client-side exception), bukan cuma
+  // notifikasi yang gagal.
+  const idInstance = useId();
 
   const muatUlang = useCallback(async () => {
     const { data: baris, error } = await supabase
@@ -597,7 +608,7 @@ export function useTransferMenunggu() {
     muatUlang();
 
     const channel = supabase
-      .channel("transfer_stok_menunggu")
+      .channel(`transfer_stok_menunggu:${idInstance}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "transfer_stok" },
@@ -610,7 +621,7 @@ export function useTransferMenunggu() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [muatUlang]);
+  }, [muatUlang, idInstance]);
 
   return { data, siap, muatUlang };
 }
