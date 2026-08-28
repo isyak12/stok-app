@@ -313,6 +313,7 @@ type BarisTransaksiStok = {
   dibatalkan_oleh_nama: string | null;
   dibatalkan_pada: string | null;
   alasan_pembatalan: string | null;
+  transaksi_stok_lampiran?: { url: string }[];
 };
 
 function keTransaksiStok(baris: BarisTransaksiStok): TransaksiStok {
@@ -393,6 +394,48 @@ export function useTransaksiStok(produkId: string) {
     }
     return urls;
   }
+
+  // Catat transaksi stok masuk/keluar baru. Bukti (foto/dokumen) wajib
+  // diunggah dulu ke storage, baru URL-nya dikirim ke Postgres function
+  // `catat_transaksi_stok` (lihat supabase/transaksi_stok.sql) yang
+  // menjamin update jumlah stok + insert baris riwayat berjalan atomik.
+  const catat = useCallback(
+    async (
+      tipe: TipeTransaksi,
+      jumlah: number,
+      cabangId: string,
+      lampiranFiles: File[],
+      catatan?: string,
+      pihak?: string,
+      noReferensi?: string,
+      dibuatPada?: string,
+    ) => {
+      if (!lampiranFiles || lampiranFiles.length === 0) {
+        throw new Error("Bukti (foto/dokumen) wajib diunggah minimal 1 file.");
+      }
+
+      const lampiranUrls = await uploadLampiran(produkId, lampiranFiles);
+
+      const { error } = await supabase.rpc("catat_transaksi_stok", {
+        p_produk_id: produkId,
+        p_cabang_id: cabangId,
+        p_tipe: tipe,
+        p_jumlah: jumlah,
+        p_lampiran_urls: lampiranUrls,
+        p_catatan: catatan?.trim() ? catatan.trim() : null,
+        p_pihak: pihak?.trim() ? pihak.trim() : null,
+        p_no_referensi: noReferensi?.trim() ? noReferensi.trim() : null,
+        p_dibuat_pada: dibuatPada ? dibuatPada : null,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      await muatUlang();
+    },
+    [produkId, muatUlang],
+  );
 
   // Batalkan (void) transaksi yang salah catat: mengoreksi balik efeknya
   // ke stok (lihat supabase/pembatalan_transaksi.sql, function
@@ -534,44 +577,6 @@ export function useTransferStok(produkId: string) {
       if (error) {
         // Tidak setError di sini: pesan error ditampilkan langsung di
         // form (lihat TransferStokForm) supaya tidak muncul dobel.
-        throw error;
-      }
-
-      await muatUlang();
-    },
-    [produkId, muatUlang],
-  );
-
-  const catat = useCallback(
-    async (
-      tipe: TipeTransaksi,
-      jumlah: number,
-      cabangId: string,
-      lampiranFiles: File[],
-      catatan?: string,
-      pihak?: string,
-      noReferensi?: string,
-      dibuatPada?: string,
-    ) => {
-      if (!lampiranFiles || lampiranFiles.length === 0) {
-        throw new Error("Bukti (foto/dokumen) wajib diunggah minimal 1 file.");
-      }
-
-      const lampiranUrls = await uploadLampiran(produkId, lampiranFiles);
-
-      const { error } = await supabase.rpc("catat_transaksi_stok", {
-        p_produk_id: produkId,
-        p_cabang_id: cabangId,
-        p_tipe: tipe,
-        p_jumlah: jumlah,
-        p_lampiran_urls: lampiranUrls,
-        p_catatan: catatan?.trim() ? catatan.trim() : null,
-        p_pihak: pihak?.trim() ? pihak.trim() : null,
-        p_no_referensi: noReferensi?.trim() ? noReferensi.trim() : null,
-        p_dibuat_pada: dibuatPada ? dibuatPada : null,
-      });
-
-      if (error) {
         throw error;
       }
 
