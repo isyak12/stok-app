@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { labelPeran, Peran } from "@/lib/role";
+import NotifikasiTransferMasuk from "./NotifikasiTransferMasuk";
 
 const NAV = [
   { href: "/", label: "Dasbor", icon: LayoutGrid },
@@ -68,13 +69,16 @@ export default function Sidebar({
         <div className="font-display text-lg font-700 tracking-tight">
           STOK - Skynet
         </div>
-        <button
-          onClick={() => setTerbuka(true)}
-          className="p-2 -mr-2 text-wheat/80 hover:text-paper"
-          aria-label="Buka menu"
-        >
-          <Menu size={22} />
-        </button>
+        <div className="flex items-center gap-1">
+          <NotifikasiTransferMasuk />
+          <button
+            onClick={() => setTerbuka(true)}
+            className="p-2 -mr-2 text-wheat/80 hover:text-paper"
+            aria-label="Buka menu"
+          >
+            <Menu size={22} />
+          </button>
+        </div>
       </div>
 
       {/* Overlay gelap di belakang menu saat terbuka (mobile saja) */}
@@ -103,13 +107,18 @@ export default function Sidebar({
               Manajemen Stok Barang
             </div>
           </div>
-          <button
-            onClick={() => setTerbuka(false)}
-            className="md:hidden p-1 -mt-1 -mr-2 text-wheat/60 hover:text-paper"
-            aria-label="Tutup menu"
-          >
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-1">
+            <div className="hidden md:block">
+              <NotifikasiTransferMasuk />
+            </div>
+            <button
+              onClick={() => setTerbuka(false)}
+              className="md:hidden p-1 -mt-1 -mr-2 text-wheat/60 hover:text-paper"
+              aria-label="Tutup menu"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         <div className="divider-barcode text-paper mx-6" />

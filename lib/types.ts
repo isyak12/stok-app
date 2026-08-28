@@ -130,6 +130,23 @@ export type TransferStok = {
   catatanPenerimaan: string | null;
 };
 
+// Satu baris transfer berstatus "terkirim" (masih menunggu konfirmasi
+// terima di cabang tujuan). Dipakai khusus untuk notifikasi lonceng
+// di Sidebar -- bentuknya sengaja ringkas (bukan TransferStok penuh)
+// karena cuma untuk ditampilkan sebagai daftar singkat + tautan ke
+// halaman transfer produk terkait.
+export type TransferMenunggu = {
+  id: string;
+  produkId: string;
+  produkNama: string;
+  produkSku: string;
+  dariCabangId: string;
+  keCabangId: string;
+  jumlah: number;
+  dibuatPada: string; // ISO date string
+  dibuatOlehNama: string | null;
+};
+
 // Nilai stok yang spesifik untuk satu kombinasi produk + cabang.
 // Dipakai form edit saat pengguna berpindah pilihan cabang.
 export type StokCabangValues = {

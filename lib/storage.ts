@@ -12,6 +12,7 @@ import {
   StokOpname,
   TipeTransaksi,
   TransaksiStok,
+  TransferMenunggu,
   TransferStok,
 } from "./types";
 
@@ -513,6 +514,105 @@ export function useCabang() {
   }, []);
 
   return { data, siap, error };
+}
+
+// Bentuk baris hasil query transfer_stok(status=terkirim) + join produk,
+// dipakai khusus untuk notifikasi "transfer menunggu konfirmasi".
+type BarisTransferMenunggu = {
+  id: string;
+  produk_id: string;
+  dari_cabang_id: string;
+  ke_cabang_id: string;
+  jumlah: number;
+  dibuat_pada: string;
+  dibuat_oleh_nama: string | null;
+  produk: { nama: string; sku: string } | { nama: string; sku: string }[] | null;
+};
+
+/**
+ * Hook untuk notifikasi "transfer menunggu konfirmasi" (lonceng di
+ * Sidebar) -- mengambil SEMUA transfer berstatus 'terkirim' lintas
+ * cabang (bukan cuma satu produk seperti useTransferStok), supaya
+ * staf tahu ada barang masuk yang perlu dikonfirmasi tanpa harus
+ * membuka satu-satu halaman transfer tiap produk.
+ *
+ * CATATAN PENTING: aplikasi ini belum punya konsep "staf ini
+ * ditugaskan di cabang X" (lihat lib/useUser.ts) -- peran cuma
+ * admin/staf/superadmin, tidak terikat cabang tertentu. Jadi
+ * notifikasi ini SENGAJA menampilkan transfer masuk ke SEMUA cabang,
+ * bukan difilter per cabang staf yang login. Kalau nanti aplikasi
+ * menambah konsep user<->cabang, filter di sini tinggal ditambah
+ * `.eq("ke_cabang_id", cabangSaya)`.
+ *
+ * Auto-refresh lewat Supabase Realtime saat ada transfer baru
+ * dicatat / dikonfirmasi / dibatalkan -- BUKAN polling -- supaya
+ * badge selalu akurat tanpa membebani database dengan query berulang.
+ * Realtime butuh tabel transfer_stok didaftarkan ke publication
+ * `supabase_realtime` di sisi Supabase (lihat
+ * supabase/migrasi_realtime_transfer.sql) -- kalau belum, hook ini
+ * tetap jalan (data awal tetap tampil), hanya saja tidak auto-update
+ * sampai halaman di-refresh manual.
+ */
+export function useTransferMenunggu() {
+  const [data, setData] = useState<TransferMenunggu[]>([]);
+  const [siap, setSiap] = useState(false);
+
+  const muatUlang = useCallback(async () => {
+    const { data: baris, error } = await supabase
+      .from("transfer_stok")
+      .select(
+        "id, produk_id, dari_cabang_id, ke_cabang_id, jumlah, dibuat_pada, dibuat_oleh_nama, produk(nama, sku)",
+      )
+      .eq("status", "terkirim")
+      .order("dibuat_pada", { ascending: true });
+
+    if (error) {
+      // Notifikasi ini bersifat pelengkap (bukan halaman utama) --
+      // kalau gagal dimuat, diam saja (daftar kosong) daripada
+      // menampilkan error yang mengganggu di seluruh halaman dasbor.
+      setSiap(true);
+      return;
+    }
+
+    setData(
+      ((baris ?? []) as BarisTransferMenunggu[]).map((b) => {
+        const produk = Array.isArray(b.produk) ? b.produk[0] : b.produk;
+        return {
+          id: b.id,
+          produkId: b.produk_id,
+          produkNama: produk?.nama ?? "Produk tidak diketahui",
+          produkSku: produk?.sku ?? "",
+          dariCabangId: b.dari_cabang_id,
+          keCabangId: b.ke_cabang_id,
+          jumlah: b.jumlah,
+          dibuatPada: b.dibuat_pada,
+          dibuatOlehNama: b.dibuat_oleh_nama,
+        };
+      }),
+    );
+    setSiap(true);
+  }, []);
+
+  useEffect(() => {
+    muatUlang();
+
+    const channel = supabase
+      .channel("transfer_stok_menunggu")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "transfer_stok" },
+        () => {
+          muatUlang();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [muatUlang]);
+
+  return { data, siap, muatUlang };
 }
 
 // Bentuk baris tabel transfer_stok dari Supabase
