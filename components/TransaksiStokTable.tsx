@@ -138,8 +138,8 @@ export default function TransaksiStokTable({
           )}
         </div>
       )}
-      <div className="bg-white border border-ink/10 rounded-sm overflow-hidden">
-      <table className="w-full text-sm">
+      <div className="bg-white border border-ink/10 rounded-sm overflow-x-auto">
+      <table className="w-full min-w-[760px] text-sm">
         <thead>
           <tr className="text-left text-[11px] uppercase tracking-wider text-ink/50 border-b border-ink/10 bg-paper/60">
             <th className="px-4 py-3 font-medium">Tanggal</th>
