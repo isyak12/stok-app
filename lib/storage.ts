@@ -331,6 +331,7 @@ function keTransaksiStok(baris: BarisTransaksiStok): TransaksiStok {
     dibatalkanOlehNama: baris.dibatalkan_oleh_nama,
     dibatalkanPada: baris.dibatalkan_pada,
     alasanPembatalan: baris.alasan_pembatalan,
+    lampiranUrls: (baris.transaksi_stok_lampiran ?? []).map((l) => l.url),
   };
 }
 
@@ -348,7 +349,7 @@ export function useTransaksiStok(produkId: string) {
     const { data: baris, error } = await supabase
       .from("transaksi_stok")
       .select(
-        "id, produk_id, cabang_id, tipe, jumlah, catatan, dibuat_pada, dibuat_oleh_nama, pihak, no_referensi, dibatalkan, dibatalkan_oleh_nama, dibatalkan_pada, alasan_pembatalan",
+        "id, produk_id, cabang_id, tipe, jumlah, catatan, dibuat_pada, dibuat_oleh_nama, pihak, no_referensi, dibatalkan, dibatalkan_oleh_nama, dibatalkan_pada, alasan_pembatalan, transaksi_stok_lampiran(url)",
       )
       .eq("produk_id", produkId)
       .order("dibuat_pada", { ascending: false });
@@ -367,43 +368,31 @@ export function useTransaksiStok(produkId: string) {
     muatUlang();
   }, [muatUlang]);
 
-  const catat = useCallback(
-    async (
-      tipe: TipeTransaksi,
-      jumlah: number,
-      cabangId: string,
-      catatan?: string,
-      pihak?: string,
-      noReferensi?: string,
-      // ISO date string. Opsional -- kosong berarti pakai waktu
-      // sekarang (perilaku lama), diisi berarti user mengatur manual
-      // tanggal & waktu transaksi (lihat
-      // supabase/migrasi_tanggal_manual_transaksi.sql untuk validasi
-      // di sisi database: tidak boleh masa depan, maksimal mundur 30
-      // hari).
-      dibuatPada?: string,
-    ) => {
-      const { error } = await supabase.rpc("catat_transaksi_stok", {
-        p_produk_id: produkId,
-        p_cabang_id: cabangId,
-        p_tipe: tipe,
-        p_jumlah: jumlah,
-        p_catatan: catatan?.trim() ? catatan.trim() : null,
-        p_pihak: pihak?.trim() ? pihak.trim() : null,
-        p_no_referensi: noReferensi?.trim() ? noReferensi.trim() : null,
-        p_dibuat_pada: dibuatPada ? dibuatPada : null,
-      });
+  const NAMA_BUCKET_BUKTI = "bukti-transaksi";
 
+  async function uploadLampiran(
+    produkId: string,
+    files: File[],
+  ): Promise<string[]> {
+    const urls: string[] = [];
+    for (const file of files) {
+      const ext = file.name.split(".").pop();
+      const path = `${produkId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage
+        .from(NAMA_BUCKET_BUKTI)
+        .upload(path, file);
       if (error) {
-        // Tidak setError di sini: pesan error ditampilkan langsung di
-        // form (lihat TransaksiStokForm) supaya tidak muncul dobel.
-        throw error;
+        throw new Error(
+          `Gagal mengunggah lampiran (${file.name}): ${error.message}`,
+        );
       }
-
-      await muatUlang();
-    },
-    [produkId, muatUlang],
-  );
+      const { data } = supabase.storage
+        .from(NAMA_BUCKET_BUKTI)
+        .getPublicUrl(path);
+      urls.push(data.publicUrl);
+    }
+    return urls;
+  }
 
   // Batalkan (void) transaksi yang salah catat: mengoreksi balik efeknya
   // ke stok (lihat supabase/pembatalan_transaksi.sql, function
@@ -545,6 +534,44 @@ export function useTransferStok(produkId: string) {
       if (error) {
         // Tidak setError di sini: pesan error ditampilkan langsung di
         // form (lihat TransferStokForm) supaya tidak muncul dobel.
+        throw error;
+      }
+
+      await muatUlang();
+    },
+    [produkId, muatUlang],
+  );
+
+  const catat = useCallback(
+    async (
+      tipe: TipeTransaksi,
+      jumlah: number,
+      cabangId: string,
+      lampiranFiles: File[],
+      catatan?: string,
+      pihak?: string,
+      noReferensi?: string,
+      dibuatPada?: string,
+    ) => {
+      if (!lampiranFiles || lampiranFiles.length === 0) {
+        throw new Error("Bukti (foto/dokumen) wajib diunggah minimal 1 file.");
+      }
+
+      const lampiranUrls = await uploadLampiran(produkId, lampiranFiles);
+
+      const { error } = await supabase.rpc("catat_transaksi_stok", {
+        p_produk_id: produkId,
+        p_cabang_id: cabangId,
+        p_tipe: tipe,
+        p_jumlah: jumlah,
+        p_lampiran_urls: lampiranUrls,
+        p_catatan: catatan?.trim() ? catatan.trim() : null,
+        p_pihak: pihak?.trim() ? pihak.trim() : null,
+        p_no_referensi: noReferensi?.trim() ? noReferensi.trim() : null,
+        p_dibuat_pada: dibuatPada ? dibuatPada : null,
+      });
+
+      if (error) {
         throw error;
       }
 

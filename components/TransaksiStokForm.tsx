@@ -11,6 +11,7 @@ type Props = {
     tipe: TipeTransaksi,
     jumlah: number,
     cabangId: string,
+    lampiranFiles: File[],
     catatan?: string,
     pihak?: string,
     noReferensi?: string,
@@ -86,9 +87,12 @@ function KartuTransaksi({
   const [catatan, setCatatan] = useState("");
   const [pihak, setPihak] = useState("");
   const [noReferensi, setNoReferensi] = useState("");
+  const [lampiran, setLampiran] = useState<File[]>([]);
   // Default: waktu sekarang, tapi bisa diubah manual (mis. mencatat
   // transaksi yang sebenarnya terjadi beberapa hari lalu).
-  const [dibuatPada, setDibuatPada] = useState(() => keDatetimeLocal(new Date()));
+  const [dibuatPada, setDibuatPada] = useState(() =>
+    keDatetimeLocal(new Date()),
+  );
   const [menyimpan, setMenyimpan] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,6 +108,10 @@ function KartuTransaksi({
     }
     if (!cabangId) {
       setError("Pilih cabang terlebih dahulu.");
+      return;
+    }
+    if (lampiran.length === 0) {
+      setError("Unggah minimal 1 bukti (foto/dokumen) transaksi.");
       return;
     }
     if (!dibuatPada) {
@@ -131,6 +139,7 @@ function KartuTransaksi({
         tipe,
         jumlah,
         cabangId,
+        lampiran,
         catatan,
         pihak,
         noReferensi,
@@ -140,6 +149,7 @@ function KartuTransaksi({
       setCatatan("");
       setPihak("");
       setNoReferensi("");
+      setLampiran([]);
       setDibuatPada(keDatetimeLocal(new Date()));
     } catch (err) {
       setError(
@@ -242,9 +252,33 @@ function KartuTransaksi({
         <input
           value={catatan}
           onChange={(e) => setCatatan(e.target.value)}
-          placeholder={masuk ? "cth. Pembelian dari supplier" : "cth. Penjualan ke pelanggan"}
+          placeholder={
+            masuk
+              ? "cth. Pembelian dari supplier"
+              : "cth. Penjualan ke pelanggan"
+          }
           className="input"
         />
+      </label>
+
+      <label className="block mb-5">
+        <span className="text-[11px] uppercase tracking-wider text-ink/50 block mb-1.5">
+          Bukti (foto/dokumen) <span className="text-rust">*wajib</span>
+        </span>
+        <input
+          type="file"
+          accept="image/*,application/pdf"
+          multiple
+          required
+          onChange={(e) => setLampiran(Array.from(e.target.files ?? []))}
+          className="input file:mr-3 file:px-3 file:py-1.5 file:rounded-sm file:border-0 file:bg-ink/5 file:text-xs file:font-medium file:cursor-pointer"
+        />
+        {lampiran.length > 0 && (
+          <span className="text-[11px] text-ink/50 block mt-1">
+            {lampiran.length} file dipilih:{" "}
+            {lampiran.map((f) => f.name).join(", ")}
+          </span>
+        )}
       </label>
 
       <button

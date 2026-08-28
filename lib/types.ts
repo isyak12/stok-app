@@ -42,14 +42,19 @@ export type TransaksiStok = {
   tipe: TipeTransaksi;
   jumlah: number;
   catatan: string | null;
-  dibuatPada: string; // ISO date string
+  dibuatPada: string;
   dibuatOlehNama: string | null;
   pihak: string | null;
   noReferensi: string | null;
   dibatalkan: boolean;
   dibatalkanOlehNama: string | null;
-  dibatalkanPada: string | null; // ISO date string, null kalau tidak dibatalkan
+  dibatalkanPada: string | null;
   alasanPembatalan: string | null;
+  // URL publik bukti (foto/dokumen) transaksi -- wajib diisi minimal
+  // 1 file saat mencatat transaksi (lihat
+  // supabase/migrasi_bukti_transaksi_stok.sql). Transaksi lama
+  // (sebelum migrasi ini) akan punya array kosong.
+  lampiranUrls: string[];
 };
 
 export type Cabang = {
