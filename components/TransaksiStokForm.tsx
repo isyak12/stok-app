@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, X } from "lucide-react";
 import { TipeTransaksi } from "@/lib/types";
 import { useCabang } from "@/lib/storage";
 
@@ -269,15 +269,60 @@ function KartuTransaksi({
           type="file"
           accept="image/*,application/pdf"
           multiple
-          required
-          onChange={(e) => setLampiran(Array.from(e.target.files ?? []))}
+          onChange={(e) => {
+            const fileBaru = Array.from(e.target.files ?? []);
+            if (fileBaru.length === 0) return;
+            setLampiran((prev) => [...prev, ...fileBaru]);
+            e.target.value = "";
+          }}
           className="input file:mr-3 file:px-3 file:py-1.5 file:rounded-sm file:border-0 file:bg-ink/5 file:text-xs file:font-medium file:cursor-pointer"
         />
+        <span className="text-[11px] text-ink/40 block mt-1">
+          Bisa pilih beberapa file sekaligus dari galeri, atau tambahkan foto
+          satu per satu dari kamera.
+        </span>
+
         {lampiran.length > 0 && (
-          <span className="text-[11px] text-ink/50 block mt-1">
-            {lampiran.length} file dipilih:{" "}
-            {lampiran.map((f) => f.name).join(", ")}
-          </span>
+          <ul className="mt-2 border border-ink/10 rounded-sm divide-y divide-ink/10 overflow-hidden">
+            {lampiran.map((file, i) => {
+              const ukuranKb = Math.round(file.size / 1024);
+              const isGambar = file.type.startsWith("image/");
+              return (
+                <li
+                  key={`${file.name}-${file.lastModified}-${i}`}
+                  className="flex items-center gap-2.5 px-3 py-2 bg-white hover:bg-paper/60 transition-colors"
+                >
+                  <span
+                    className={`inline-flex items-center justify-center w-6 h-6 rounded-sm shrink-0 text-[10px] font-mono font-medium ${
+                      isGambar
+                        ? "bg-moss/10 text-moss"
+                        : "bg-ink/10 text-ink/60"
+                    }`}
+                  >
+                    {isGambar ? "IMG" : "DOC"}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-ink/80 truncate">{file.name}</p>
+                    <p className="text-[10px] text-ink/40 font-mono">
+                      {ukuranKb < 1024
+                        ? `${ukuranKb} KB`
+                        : `${(ukuranKb / 1024).toFixed(1)} MB`}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setLampiran((prev) => prev.filter((_, idx) => idx !== i))
+                    }
+                    className="shrink-0 w-6 h-6 inline-flex items-center justify-center rounded-sm text-ink/40 hover:text-rust hover:bg-rust/10 transition-colors"
+                    aria-label={`Hapus ${file.name}`}
+                  >
+                    <X size={13} />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </label>
 
