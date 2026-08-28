@@ -12,6 +12,7 @@ import {
   X,
   Users,
   History,
+  KeyRound,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { labelPeran, Peran } from "@/lib/role";
@@ -97,7 +98,6 @@ export default function Sidebar({
           md:relative md:translate-x-0 md:z-30`}
       >
         <div className="absolute left-0 top-0 bottom-0 w-1.5 divider-barcode opacity-40" />
-
         <div className="flex items-start justify-between px-6 pt-8 pb-6">
           <div>
             <div className="font-display text-2xl font-700 tracking-tight">
@@ -120,9 +120,7 @@ export default function Sidebar({
             </button>
           </div>
         </div>
-
         <div className="divider-barcode text-paper mx-6" />
-
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           {navTerlihat.map((item) => {
             const active =
@@ -147,9 +145,7 @@ export default function Sidebar({
             );
           })}
         </nav>
-
         <div className="divider-barcode text-paper mx-6" />
-
         <div className="px-4 py-4">
           {username && (
             <div className="px-3 mb-2 truncate" title={username}>
@@ -159,7 +155,15 @@ export default function Sidebar({
               </div>
             </div>
           )}
-          <Link href="/akun/ubah-password">Ubah Password</Link>
+
+          <Link
+            href="/akun/ubah-password"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm text-wheat/70 hover:text-paper hover:bg-white/5 transition-colors"
+          >
+            <KeyRound size={17} strokeWidth={1.75} />
+            Ubah Password
+          </Link>
+
           <button
             onClick={keluar}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm text-wheat/70 hover:text-paper hover:bg-white/5 transition-colors"
@@ -168,7 +172,6 @@ export default function Sidebar({
             Keluar
           </button>
         </div>
-
         <div className="px-6 py-4 text-[11px] text-wheat/50 font-mono border-t border-white/5">
           v1.1 — STOK-SKYNET
         </div>
