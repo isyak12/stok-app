@@ -6,6 +6,7 @@ import { BarangInput, Barang } from "@/lib/types";
 import { useCabang, useStokPerCabang } from "@/lib/storage";
 import { Peran, adalahAdminAtauLebih } from "@/lib/role";
 import { Lock } from "lucide-react";
+import { pesanError } from "@/lib/error";
 
 type Props = {
   awal?: Barang;
@@ -120,11 +121,7 @@ export default function StokForm({
       await onSimpan(form);
       router.push("/stok");
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Gagal menyimpan barang. Coba lagi.",
-      );
+      setError(pesanError(err, "Gagal menyimpan barang. Coba lagi."));
       setMenyimpan(false);
     }
   }

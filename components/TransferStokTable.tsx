@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowRightLeft, CheckCircle2, Clock, ImageOff, XCircle } from "lucide-react";
 import { TransferStok, Cabang } from "@/lib/types";
+import { pesanError } from "@/lib/error";
 
 type Props = {
   data: TransferStok[];
@@ -104,9 +105,7 @@ export default function TransferStokTable({
       await onKonfirmasiTerima(id, fotoBukti, catatanPenerimaan);
       tutupFormTerima();
     } catch (err) {
-      setErrorForm(
-        err instanceof Error ? err.message : "Gagal mengonfirmasi transfer.",
-      );
+      setErrorForm(pesanError(err, "Gagal mengonfirmasi transfer."));
     } finally {
       setMemproses(null);
     }
@@ -133,7 +132,7 @@ export default function TransferStokTable({
     try {
       await onBatalkan(id, alasan);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Gagal membatalkan transfer.");
+      alert(pesanError(err, "Gagal membatalkan transfer."));
     } finally {
       setMemproses(null);
     }

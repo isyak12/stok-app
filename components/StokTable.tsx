@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Barang } from "@/lib/types";
 import { Peran, adalahAdminAtauLebih } from "@/lib/role";
 import { Search, Pencil, Trash2, TriangleAlert } from "lucide-react";
+import { pesanError } from "@/lib/error";
 
 function formatRupiah(n: number) {
   return new Intl.NumberFormat("id-ID", {
@@ -139,9 +140,7 @@ export default function StokTable({ data, onHapus, peran = "staf" }: Props) {
                                 await onHapus(b.id);
                               } catch (err) {
                                 alert(
-                                  err instanceof Error
-                                    ? err.message
-                                    : "Gagal menghapus barang.",
+                                  pesanError(err, "Gagal menghapus barang."),
                                 );
                               }
                             }

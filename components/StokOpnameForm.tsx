@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ClipboardCheck } from "lucide-react";
 import { AlasanOpname, Barang } from "@/lib/types";
 import { useCabang } from "@/lib/storage";
+import { pesanError } from "@/lib/error";
 
 const LABEL_ALASAN: Record<AlasanOpname, string> = {
   rusak: "Barang rusak",
@@ -87,9 +88,7 @@ export default function StokOpnameForm({ barang, onCatat }: Props) {
       setAlasan("");
       setCatatan("");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Gagal mencatat stok opname.",
-      );
+      setError(pesanError(err, "Gagal mencatat stok opname."));
     } finally {
       setMenyimpan(false);
     }

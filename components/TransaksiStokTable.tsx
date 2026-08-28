@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowDownToLine, ArrowUpFromLine, XCircle } from "lucide-react";
 import { Cabang, TransaksiStok } from "@/lib/types";
+import { pesanError } from "@/lib/error";
 
 type Props = {
   data: TransaksiStok[];
@@ -51,9 +52,7 @@ export default function TransaksiStokTable({
     try {
       await onBatalkan(id, alasan);
     } catch (err) {
-      alert(
-        err instanceof Error ? err.message : "Gagal membatalkan transaksi.",
-      );
+      alert(pesanError(err, "Gagal membatalkan transaksi."));
     } finally {
       setMemproses(null);
     }

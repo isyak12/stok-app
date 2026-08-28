@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowDownToLine, ArrowUpFromLine, X } from "lucide-react";
 import { TipeTransaksi } from "@/lib/types";
 import { useCabang } from "@/lib/storage";
+import { pesanError } from "@/lib/error";
 
 type Props = {
   cabangDefaultId?: string;
@@ -162,9 +163,10 @@ function KartuTransaksi({
       setDibuatPada(keDatetimeLocal(new Date()));
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : `Gagal mencatat stok ${masuk ? "masuk" : "keluar"}. Coba lagi.`,
+        pesanError(
+          err,
+          `Gagal mencatat stok ${masuk ? "masuk" : "keluar"}. Coba lagi.`,
+        ),
       );
     } finally {
       setMenyimpan(false);

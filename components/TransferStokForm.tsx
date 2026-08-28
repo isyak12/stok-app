@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowRightLeft } from "lucide-react";
 import { useCabang } from "@/lib/storage";
+import { pesanError } from "@/lib/error";
 
 type Props = {
   cabangDefaultId?: string;
@@ -50,9 +51,7 @@ export default function TransferStokForm({ cabangDefaultId, onCatat }: Props) {
       setJumlah("");
       setCatatan("");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Gagal mencatat transfer stok. Coba lagi.",
-      );
+      setError(pesanError(err, "Gagal mencatat transfer stok. Coba lagi."));
     } finally {
       setMenyimpan(false);
     }
