@@ -194,3 +194,38 @@ export type MutasiStok =
       // bertambah seolah-olah sudah pindah sepenuhnya.
       status: StatusTransfer;
     };
+
+// ============================================================
+// TAMBAHKAN kode di bawah ini ke file lib/types.ts yang sudah ada
+// (jangan timpa file lamanya, cukup gabungkan)
+// ============================================================
+
+export type JenisMutasi = "masuk" | "keluar";
+
+export interface MutasiStok {
+  id: string;
+  produk_id: string;
+  jenis: JenisMutasi;
+  jumlah: number;
+  keterangan: string;
+  tanggal: string;
+  dibuat_oleh: string | null;
+  created_at: string;
+}
+
+// Gabungan mutasi + info produk, untuk ditampilkan di tabel riwayat
+export interface MutasiStokDenganProduk extends MutasiStok {
+  produk: {
+    nama: string;
+    sku: string;
+    satuan: string;
+  };
+}
+
+// Payload untuk form tambah mutasi
+export interface TambahMutasiInput {
+  produk_id: string;
+  jenis: JenisMutasi;
+  jumlah: number;
+  keterangan: string;
+}
