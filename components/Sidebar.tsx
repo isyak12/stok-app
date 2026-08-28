@@ -159,6 +159,7 @@ export default function Sidebar({
               </div>
             </div>
           )}
+          <Link href="/akun/ubah-password">Ubah Password</Link>
           <button
             onClick={keluar}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm text-wheat/70 hover:text-paper hover:bg-white/5 transition-colors"
