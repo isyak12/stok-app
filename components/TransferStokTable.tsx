@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { ArrowRightLeft, CheckCircle2, Clock, ImageOff, XCircle } from "lucide-react";
 import { TransferStok, Cabang } from "@/lib/types";
 import { pesanError } from "@/lib/error";
@@ -48,6 +48,18 @@ export default function TransferStokTable({
   const [errorForm, setErrorForm] = useState<string | null>(null);
   // Foto yang sedang diperbesar (lightbox), null = tidak ada.
   const [fotoDiperbesar, setFotoDiperbesar] = useState<string | null>(null);
+
+  // Bersihkan object URL preview saat komponen unmount (mis. user
+  // pindah halaman saat form konfirmasi terima masih terbuka) --
+  // pakai ref supaya cleanup baca nilai preview PALING BARU, bukan
+  // snapshot dari render pertama.
+  const previewFotoRef = useRef(previewFoto);
+  previewFotoRef.current = previewFoto;
+  useEffect(() => {
+    return () => {
+      if (previewFotoRef.current) URL.revokeObjectURL(previewFotoRef.current);
+    };
+  }, []);
 
   function namaCabang(id: string) {
     return daftarCabang.find((c) => c.id === id)?.nama ?? "—";

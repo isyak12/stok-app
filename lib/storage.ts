@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { createClient } from "./supabase/client";
+import { uploadLampiranKeBucket } from "./lampiran-upload";
 import {
   Barang,
   BarangInput,
@@ -374,46 +375,18 @@ export function useTransaksiStok(produkId: string) {
   const NAMA_BUCKET_BUKTI = "bukti-transaksi";
 
   // Mengembalikan path Storage (bukan URL publik) di samping URL, supaya
-  // uploadLampiran bisa membersihkan file itu lagi kalau langkah
+  // uploadLampiranKeBucket bisa membersihkan file itu lagi kalau langkah
   // berikutnya (RPC catat_transaksi_stok) gagal.
   async function uploadLampiran(
     produkId: string,
     files: File[],
   ): Promise<{ url: string; path: string }[]> {
-    const hasilUpload: { url: string; path: string }[] = [];
-    try {
-      for (const file of files) {
-        const ext = file.name.split(".").pop();
-        const path = `${produkId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error } = await supabase.storage
-          .from(NAMA_BUCKET_BUKTI)
-          .upload(path, file);
-        if (error) {
-          throw new Error(
-            `Gagal mengunggah lampiran (${file.name}): ${error.message}`,
-          );
-        }
-        const { data } = supabase.storage
-          .from(NAMA_BUCKET_BUKTI)
-          .getPublicUrl(path);
-        hasilUpload.push({ url: data.publicUrl, path });
-      }
-      return hasilUpload;
-    } catch (err) {
-      // Salah satu file gagal diunggah di tengah jalan -- bersihkan
-      // file-file sebelumnya yang sudah kadung terunggah di percobaan
-      // ini, supaya tidak jadi sampah tak terpakai di bucket.
-      if (hasilUpload.length > 0) {
-        await supabase.storage
-          .from(NAMA_BUCKET_BUKTI)
-          .remove(hasilUpload.map((f) => f.path))
-          .catch(() => {
-            // Gagal membersihkan bukan hal fatal -- error asli (upload)
-            // yang lebih penting untuk ditampilkan ke user.
-          });
-      }
-      throw err;
-    }
+    return uploadLampiranKeBucket(
+      NAMA_BUCKET_BUKTI,
+      produkId,
+      files,
+      "lampiran",
+    );
   }
 
   // Catat transaksi stok masuk/keluar baru. Bukti (foto/dokumen) wajib
@@ -925,37 +898,12 @@ export function useStokOpname(produkId: string) {
     produkId: string,
     files: File[],
   ): Promise<{ url: string; path: string }[]> {
-    const hasilUpload: { url: string; path: string }[] = [];
-    try {
-      for (const file of files) {
-        const ext = file.name.split(".").pop();
-        const path = `opname/${produkId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error } = await supabase.storage
-          .from(NAMA_BUCKET_BUKTI)
-          .upload(path, file);
-        if (error) {
-          throw new Error(
-            `Gagal mengunggah foto (${file.name}): ${error.message}`,
-          );
-        }
-        const { data } = supabase.storage
-          .from(NAMA_BUCKET_BUKTI)
-          .getPublicUrl(path);
-        hasilUpload.push({ url: data.publicUrl, path });
-      }
-      return hasilUpload;
-    } catch (err) {
-      if (hasilUpload.length > 0) {
-        await supabase.storage
-          .from(NAMA_BUCKET_BUKTI)
-          .remove(hasilUpload.map((f) => f.path))
-          .catch(() => {
-            // Gagal membersihkan bukan hal fatal -- error asli (upload)
-            // yang lebih penting untuk ditampilkan ke user.
-          });
-      }
-      throw err;
-    }
+    return uploadLampiranKeBucket(
+      NAMA_BUCKET_BUKTI,
+      `opname/${produkId}`,
+      files,
+      "foto",
+    );
   }
 
   const catat = useCallback(

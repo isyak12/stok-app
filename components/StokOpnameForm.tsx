@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ClipboardCheck, ImagePlus, X } from "lucide-react";
 import { AlasanOpname, Barang } from "@/lib/types";
 import { useCabang } from "@/lib/storage";
@@ -50,6 +50,21 @@ export default function StokOpnameForm({ barang, onCatat }: Props) {
   useEffect(() => {
     setCabangId(barang.cabangId);
   }, [barang.cabangId]);
+
+  // Bersihkan semua object URL preview saat komponen unmount (mis.
+  // user pindah halaman sebelum submit) -- tanpa ini, blob URL yang
+  // sudah dibuat lewat URL.createObjectURL tetap menempel di memori
+  // browser walau komponennya sudah hilang. Pakai ref (bukan
+  // dependency [previewFoto]) supaya cleanup ini hanya jalan sekali
+  // saat unmount, tapi tetap membaca daftar URL yang PALING BARU
+  // (bukan snapshot basi dari render pertama).
+  const previewFotoRef = useRef(previewFoto);
+  previewFotoRef.current = previewFoto;
+  useEffect(() => {
+    return () => {
+      previewFotoRef.current.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []);
 
   const stokSistem = useMemo(
     () => barang.stokPerCabang.find((s) => s.cabangId === cabangId)?.jumlah,
