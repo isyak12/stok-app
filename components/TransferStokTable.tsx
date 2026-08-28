@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { ArrowRightLeft, CheckCircle2, Clock, ImageOff, XCircle } from "lucide-react";
 import { TransferStok, Cabang } from "@/lib/types";
 import { pesanError } from "@/lib/error";
@@ -168,9 +168,11 @@ export default function TransferStokTable({
             const diterima = t.status === "diterima";
             const formTerbuka = formTerimaId === t.id;
             return (
-              <>
+              // Fragment butuh key sendiri di dalam .map() (bukan di
+              // <tr> pertama sebagai child) supaya React bisa
+              // mengidentifikasi tiap grup <tr>+<tr form> dengan benar.
+              <Fragment key={t.id}>
                 <tr
-                  key={t.id}
                   className={`border-b border-ink/5 last:border-0 hover:bg-paper/50 ${
                     dibatalkan ? "opacity-60" : ""
                   }`}
@@ -286,7 +288,7 @@ export default function TransferStokTable({
                   )}
                 </tr>
                 {formTerbuka && (
-                  <tr key={`${t.id}-form`} className="border-b border-ink/5 bg-paper/40">
+                  <tr className="border-b border-ink/5 bg-paper/40">
                     <td colSpan={10} className="px-4 py-4">
                       <div className="max-w-lg space-y-3">
                         <p className="text-xs text-ink/60">
@@ -347,7 +349,7 @@ export default function TransferStokTable({
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             );
           })}
           {data.length === 0 && (

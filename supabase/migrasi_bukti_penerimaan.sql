@@ -103,6 +103,13 @@ begin
     and cabang_id = v_transfer.ke_cabang_id
   for update;
 
+  -- Trigger dari migrasi_kunci_jumlah_manual.sql mewajibkan flag
+  -- 'stokku.izinkan_ubah_jumlah' aktif sebelum UPDATE stok.jumlah
+  -- dilakukan di luar RPC transaksi normal. Tanpa baris ini,
+  -- "Tandai Diterima" gagal dengan error "Jumlah stok tidak bisa
+  -- diubah manual..." (sebelumnya ditambal terpisah lewat
+  -- fix_kunci_bukti_penerimaan.sql -- sudah digabung ke sini).
+  perform set_config('stokku.izinkan_ubah_jumlah', 'true', true);
   update stok
   set jumlah = jumlah + v_transfer.jumlah
   where produk_id = v_transfer.produk_id
@@ -143,3 +150,8 @@ $$;
 --   cukup menampilkan "Tidak ada foto" untuk baris lama tersebut.
 -- - Kalau nanti perlu batasi ukuran file upload, itu diatur di sisi
 --   frontend (lib/storage.ts) sebelum upload, bukan di function ini.
+-- - (Konsolidasi) File fix_kunci_bukti_penerimaan.sql yang sebelumnya
+--   terpisah sudah digabung ke migrasi ini (lihat komentar di baris
+--   perform set_config('stokku.izinkan_ubah_jumlah', ...) di atas).
+--   Kalau project ini baru di-clone dari awal, file fix_* tersebut
+--   TIDAK PERLU dijalankan lagi -- cukup jalankan migrasi ini.

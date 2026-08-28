@@ -41,11 +41,27 @@ export default function StokTable({
   );
 
   const hasil = useMemo(() => {
+    const qLower = q.trim().toLowerCase();
     return data
       .filter((b) => {
+        // Lokasi rak berbeda per cabang, jadi kalau tampilan sedang
+        // difilter ke satu cabang, cocokkan lokasi cabang itu saja.
+        // Kalau "semua cabang", cocokkan ke SEMUA lokasi rak barang
+        // ini supaya staf tetap ketemu meski tidak tahu cabang mana
+        // yang punya lokasi tersebut.
+        const daftarLokasi = cabangId
+          ? [
+              b.stokPerCabang.find((s) => s.cabangId === cabangId)?.lokasi ??
+                "",
+            ]
+          : [b.lokasi, ...b.stokPerCabang.map((s) => s.lokasi)];
+
         const cocokTeks =
-          b.nama.toLowerCase().includes(q.toLowerCase()) ||
-          b.sku.toLowerCase().includes(q.toLowerCase());
+          qLower === "" ||
+          b.nama.toLowerCase().includes(qLower) ||
+          b.sku.toLowerCase().includes(qLower) ||
+          b.kategori.toLowerCase().includes(qLower) ||
+          daftarLokasi.some((l) => l.toLowerCase().includes(qLower));
         const cocokKategori = kategori === "Semua" || b.kategori === kategori;
         // Kalau cabang tertentu dipilih, barang yang belum pernah
         // punya baris stok di cabang itu disembunyikan — tidak ada
@@ -81,7 +97,7 @@ export default function StokTable({
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Cari nama atau SKU barang..."
+            placeholder="Cari nama, SKU, kategori, atau lokasi rak..."
             className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
           />
         </div>

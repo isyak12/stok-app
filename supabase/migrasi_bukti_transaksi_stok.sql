@@ -35,14 +35,19 @@ create index if not exists idx_transaksi_stok_lampiran_transaksi_id
 
 alter table transaksi_stok_lampiran enable row level security;
 
--- Prototipe / belum pakai login (samakan dengan schema.sql).
--- SUDAH MENAMBAHKAN LOGIN? Ganti policy ini dengan versi
--- "auth.role() = 'authenticated'" (samakan dengan auth-policies.sql).
+-- Sudah pakai auth.role() = 'authenticated' langsung (samakan dengan
+-- auth-policies.sql) -- BUKAN policy prototipe "using (true)" seperti
+-- versi awal file ini, karena tabel ini dibuat belakangan dan
+-- sempat tertinggal dari auth-policies.sql (celah RLS yang
+-- mengizinkan akses baca/tulis tanpa login lewat anon key; dulu
+-- ditambal terpisah lewat fix_rls_transaksi_stok_lampiran.sql --
+-- sudah digabung ke sini).
 drop policy if exists "Izinkan semua akses transaksi_stok_lampiran" on transaksi_stok_lampiran;
-create policy "Izinkan semua akses transaksi_stok_lampiran"
+drop policy if exists "Hanya user login yang boleh akses transaksi_stok_lampiran" on transaksi_stok_lampiran;
+create policy "Hanya user login yang boleh akses transaksi_stok_lampiran"
   on transaksi_stok_lampiran for all
-  using (true)
-  with check (true);
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
 
 -- ============================================================
 -- 2. Storage bucket untuk bukti transaksi
@@ -184,4 +189,10 @@ $$;
 --   "Tidak ada lampiran" untuk baris lama tersebut.
 -- - Kalau nanti perlu batasi ukuran/tipe file upload, itu diatur di
 --   sisi frontend (lib/storage.ts) sebelum upload, bukan di function
+--   ini.
+-- - (Konsolidasi) File fix_rls_transaksi_stok_lampiran.sql yang
+--   sebelumnya terpisah sudah digabung ke migrasi ini (lihat policy
+--   "Hanya user login yang boleh akses transaksi_stok_lampiran" di
+--   atas). Kalau project ini baru di-clone dari awal, file fix_*
+--   tersebut TIDAK PERLU dijalankan lagi -- cukup jalankan migrasi
 --   ini.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useCabang, useStok } from "@/lib/storage";
 import StatCard from "@/components/StatCard";
@@ -23,8 +23,11 @@ export default function DasborPage() {
   // dihitung ulang khusus untuk cabang tersebut.
   const [cabangTerpilih, setCabangTerpilih] = useState<string>("semua");
 
-  const namaCabang = (cabangId: string) =>
-    daftarCabang.find((c) => c.id === cabangId)?.nama ?? "—";
+  const namaCabang = useCallback(
+    (cabangId: string) =>
+      daftarCabang.find((c) => c.id === cabangId)?.nama ?? "—",
+    [daftarCabang],
+  );
 
   // Barang yang relevan untuk cabang terpilih: kalau "semua", semua
   // barang; kalau cabang tertentu, hanya barang yang PUNYA baris
@@ -87,8 +90,7 @@ export default function DasborPage() {
           stokMinimum: s.stokMinimum,
         })),
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, cabangTerpilih, daftarCabang]);
+  }, [data, cabangTerpilih, namaCabang]);
 
   return (
     <div className="p-4 sm:p-8 max-w-6xl">
