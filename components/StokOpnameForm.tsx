@@ -121,6 +121,15 @@ export default function StokOpnameForm({ barang, onCatat }: Props) {
       setError('Alasan "Lainnya" perlu dijelaskan singkat di catatan.');
       return;
     }
+    // Sama seperti transaksi manual yang wajib bukti foto: kalau ada
+    // selisih (stok dikoreksi), foto jadi wajib supaya standar bukti
+    // auditnya konsisten. Kalau hasilnya cocok, tetap opsional.
+    if (selisih !== null && selisih !== 0 && foto.length === 0) {
+      setError(
+        "Ada selisih dengan stok sistem — unggah minimal 1 foto bukti hitung fisik.",
+      );
+      return;
+    }
 
     setError(null);
     setMenyimpan(true);
@@ -267,7 +276,12 @@ export default function StokOpnameForm({ barang, onCatat }: Props) {
 
       <div className="block mb-5">
         <span className="text-[11px] uppercase tracking-wider text-ink/50 block mb-1.5">
-          Foto bukti hitung fisik (opsional)
+          Foto bukti hitung fisik{" "}
+          {selisih !== null && selisih !== 0 ? (
+            <span className="text-rust">*wajib (ada selisih)</span>
+          ) : (
+            "(opsional)"
+          )}
         </span>
         <div className="flex flex-wrap gap-2">
           {previewFoto.map((url, i) => (
@@ -295,10 +309,14 @@ export default function StokOpnameForm({ barang, onCatat }: Props) {
             <label className="w-16 h-16 flex flex-col items-center justify-center gap-1 border border-dashed border-ink/25 rounded-sm text-ink/40 hover:text-ink/70 hover:border-ink/40 cursor-pointer transition-colors">
               <ImagePlus size={18} />
               <span className="text-[10px]">Tambah</span>
+              {/* Sengaja TIDAK pakai capture="environment" -- sama
+                  seperti konvensi di TransaksiStokForm. Kalau
+                  dibarengin dengan `multiple`, banyak browser mobile
+                  jadi cuma bisa buka kamera (1 foto per klik) dan
+                  gak bisa multi-select dari galeri. */}
               <input
                 type="file"
                 accept="image/*"
-                capture="environment"
                 multiple
                 className="hidden"
                 onChange={(e) => {
@@ -310,8 +328,10 @@ export default function StokOpnameForm({ barang, onCatat }: Props) {
           )}
         </div>
         <p className="text-[11px] text-ink/40 mt-1.5">
-          Boleh lebih dari satu foto, maksimal {MAKS_JUMLAH_FOTO}. Tidak
-          wajib diisi.
+          Boleh lebih dari satu foto, maksimal {MAKS_JUMLAH_FOTO}.{" "}
+          {selisih !== null && selisih !== 0
+            ? "Wajib diisi karena ada selisih dengan stok sistem."
+            : "Tidak wajib diisi kalau hasilnya cocok."}
         </p>
       </div>
 

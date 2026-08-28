@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CheckCircle2, TrendingDown, TrendingUp } from "lucide-react";
 import { Cabang, StokOpname } from "@/lib/types";
+import { GridLampiran, Lightbox } from "@/components/LampiranFoto";
 
 type Props = {
   data: StokOpname[];
@@ -17,106 +18,6 @@ function formatTanggal(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(iso));
-}
-
-// Sama persis dengan GridLampiran di TransaksiStokTable -- kalau
-// nanti dipakai di tempat ketiga, sebaiknya dipindah jadi satu
-// komponen bersama di components/LampiranFoto.tsx.
-function GridLampiran({
-  urls,
-  onKlikFoto,
-}: {
-  urls: string[];
-  onKlikFoto: (index: number) => void;
-}) {
-  if (urls.length === 0) {
-    return <span className="text-ink/30 text-xs">—</span>;
-  }
-  const MAKS_TAMPIL = 4;
-  const tampil = urls.slice(0, MAKS_TAMPIL);
-  const sisa = urls.length - MAKS_TAMPIL;
-
-  return (
-    <div className="flex gap-1">
-      {tampil.map((url, i) => (
-        <button
-          key={url}
-          type="button"
-          onClick={() => onKlikFoto(i)}
-          className="relative w-9 h-9 rounded-sm overflow-hidden border border-ink/15 hover:border-ink/40 transition-colors shrink-0"
-          title={`Lihat foto ${i + 1}`}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={url}
-            alt={`Foto bukti ${i + 1}`}
-            className="w-full h-full object-cover"
-          />
-          {i === MAKS_TAMPIL - 1 && sisa > 0 && (
-            <span className="absolute inset-0 bg-ink/70 flex items-center justify-center text-paper text-[11px] font-medium">
-              +{sisa}
-            </span>
-          )}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function Lightbox({
-  urls,
-  index,
-  onIndexChange,
-  onTutup,
-}: {
-  urls: string[];
-  index: number;
-  onIndexChange: (i: number) => void;
-  onTutup: () => void;
-}) {
-  return (
-    <div
-      className="fixed inset-0 bg-ink/80 flex items-center justify-center p-4 z-50"
-      onClick={onTutup}
-    >
-      <div
-        className="relative max-w-full max-h-full"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={urls[index]}
-          alt={`Foto bukti ${index + 1}`}
-          className="max-w-full max-h-[85vh] rounded-sm"
-        />
-        {urls.length > 1 && (
-          <>
-            <button
-              type="button"
-              onClick={() =>
-                onIndexChange((index - 1 + urls.length) % urls.length)
-              }
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-ink/70 text-paper flex items-center justify-center hover:bg-ink"
-              aria-label="Foto sebelumnya"
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              onClick={() => onIndexChange((index + 1) % urls.length)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-ink/70 text-paper flex items-center justify-center hover:bg-ink"
-              aria-label="Foto berikutnya"
-            >
-              ›
-            </button>
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-ink/70 text-paper text-[11px] font-mono">
-              {index + 1} / {urls.length}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
 }
 
 export default function StokOpnameTable({ data, daftarCabang }: Props) {
@@ -145,10 +46,13 @@ export default function StokOpnameTable({ data, daftarCabang }: Props) {
             </th>
             <th className="px-4 py-3 font-medium text-right">Stok Fisik</th>
             <th className="px-4 py-3 font-medium text-right">Selisih</th>
-            <th className="px-4 py-3 font-medium">Foto</th>
             <th className="px-4 py-3 font-medium hidden md:table-cell">
               Alasan / Catatan
             </th>
+            {/* Ditaruh setelah Alasan/Catatan (bukan sebelum) supaya
+                urutan bacanya natural: lihat selisih -> baca
+                alasannya -> cek fotonya sebagai bukti. */}
+            <th className="px-4 py-3 font-medium">Foto</th>
             <th className="px-4 py-3 font-medium hidden md:table-cell">
               Dicatat oleh
             </th>
@@ -192,14 +96,6 @@ export default function StokOpnameTable({ data, daftarCabang }: Props) {
                     {cocok ? "Cocok" : `${o.selisih > 0 ? "+" : ""}${o.selisih}`}
                   </span>
                 </td>
-                <td className="px-4 py-3">
-                  <GridLampiran
-                    urls={o.lampiranUrls}
-                    onKlikFoto={(index) =>
-                      setLightbox({ opnameId: o.id, index })
-                    }
-                  />
-                </td>
                 <td className="px-4 py-3 text-ink/70 hidden md:table-cell">
                   {o.alasan ? (
                     <>
@@ -211,6 +107,15 @@ export default function StokOpnameTable({ data, daftarCabang }: Props) {
                   ) : (
                     o.catatan || <span className="text-ink/30">—</span>
                   )}
+                </td>
+                <td className="px-4 py-3">
+                  <GridLampiran
+                    urls={o.lampiranUrls}
+                    onKlikFoto={(index) =>
+                      setLightbox({ opnameId: o.id, index })
+                    }
+                    labelAlt="Foto bukti"
+                  />
                 </td>
                 <td className="px-4 py-3 text-ink/70 hidden md:table-cell">
                   {o.dibuatOlehNama || <span className="text-ink/30">—</span>}
@@ -239,6 +144,7 @@ export default function StokOpnameTable({ data, daftarCabang }: Props) {
             setLightbox({ opnameId: lightbox.opnameId, index: i })
           }
           onTutup={() => setLightbox(null)}
+          labelAlt="Foto bukti"
         />
       )}
     </div>
