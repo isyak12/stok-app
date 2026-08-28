@@ -46,7 +46,7 @@ export default function NotifikasiTransferMasuk() {
   }, []);
 
   return (
-    <div className="relative" ref={wadahRef}>
+    <div className="relative z-50" ref={wadahRef}>
       <button
         type="button"
         onClick={() => setTerbuka((v) => !v)}
@@ -66,7 +66,7 @@ export default function NotifikasiTransferMasuk() {
       </button>
 
       {terbuka && (
-        <div className="absolute right-0 md:right-auto md:left-0 mt-2 w-80 max-w-[calc(100vw-2rem)] max-h-96 overflow-y-auto bg-white border border-ink/10 rounded-sm shadow-lg z-50 text-ink">
+        <div className="absolute right-0 md:right-auto md:left-0 mt-2 w-80 max-w-[calc(100vw-2rem)] max-h-96 overflow-y-auto bg-white border border-ink/10 rounded-sm shadow-lg z-[100] text-ink">
           <div className="px-4 py-3 border-b border-ink/10 flex items-center justify-between">
             <p className="text-sm font-medium">Transfer Menunggu Konfirmasi</p>
             {jumlah > 0 && (
