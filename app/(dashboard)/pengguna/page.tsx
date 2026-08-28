@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { ShieldAlert, Trash2, UserPlus } from "lucide-react";
+import { Fragment, useCallback, useEffect, useState } from "react";
+import { KeyRound, ShieldAlert, Trash2, UserPlus } from "lucide-react";
 import { useUser } from "@/lib/useUser";
 import { labelPeran, Peran } from "@/lib/role";
 
@@ -32,6 +32,13 @@ export default function KelolaPenggunaPage() {
   const [peranBaru, setPeranBaru] = useState<"admin" | "staf">("staf");
   const [menyimpan, setMenyimpan] = useState(false);
   const [memproses, setMemproses] = useState<string | null>(null);
+
+  // Id user yang sedang membuka form reset password (null = tidak ada
+  // form yang terbuka). Dipisah dari `memproses` supaya bisa tampilkan
+  // form inline sambil tombol lain tetap disabled selama proses.
+  const [resetId, setResetId] = useState<string | null>(null);
+  const [passwordBaru, setPasswordBaru] = useState("");
+  const [errorReset, setErrorReset] = useState<string | null>(null);
 
   const muatUlang = useCallback(async () => {
     setSiap(false);
@@ -110,6 +117,44 @@ export default function KelolaPenggunaPage() {
       await muatUlang();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menghapus pengguna.");
+    } finally {
+      setMemproses(null);
+    }
+  }
+
+  function bukaFormReset(id: string) {
+    setResetId(id);
+    setPasswordBaru("");
+    setErrorReset(null);
+  }
+
+  function tutupFormReset() {
+    setResetId(null);
+    setPasswordBaru("");
+    setErrorReset(null);
+  }
+
+  async function resetPassword(e: React.FormEvent, id: string) {
+    e.preventDefault();
+    if (!passwordBaru || passwordBaru.length < 6) {
+      setErrorReset("Password minimal 6 karakter.");
+      return;
+    }
+    setMemproses(id);
+    setErrorReset(null);
+    try {
+      const res = await fetch("/api/pengguna", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, password: passwordBaru }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Gagal reset password.");
+      tutupFormReset();
+    } catch (err) {
+      setErrorReset(
+        err instanceof Error ? err.message : "Gagal reset password.",
+      );
     } finally {
       setMemproses(null);
     }
@@ -241,7 +286,8 @@ export default function KelolaPenggunaPage() {
               </tr>
             ) : (
               data.map((p) => (
-                <tr key={p.id} className="border-b border-ink/5 last:border-0">
+                <Fragment key={p.id}>
+                <tr className="border-b border-ink/5 last:border-0">
                   <td className="px-4 py-3">
                     {p.username}
                     {p.id === user?.id && (
@@ -274,17 +320,80 @@ export default function KelolaPenggunaPage() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     {p.peran !== "superadmin" && p.id !== user?.id && (
-                      <button
-                        onClick={() => hapusPengguna(p.id, p.username)}
-                        disabled={memproses === p.id}
-                        className="text-ink/40 hover:text-rust disabled:opacity-50"
-                        title="Hapus akun"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="flex items-center justify-end gap-3">
+                        <button
+                          onClick={() =>
+                            resetId === p.id
+                              ? tutupFormReset()
+                              : bukaFormReset(p.id)
+                          }
+                          disabled={memproses === p.id}
+                          className="text-ink/40 hover:text-ink disabled:opacity-50"
+                          title="Reset password"
+                        >
+                          <KeyRound size={16} />
+                        </button>
+                        <button
+                          onClick={() => hapusPengguna(p.id, p.username)}
+                          disabled={memproses === p.id}
+                          className="text-ink/40 hover:text-rust disabled:opacity-50"
+                          title="Hapus akun"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
+                {resetId === p.id && (
+                  <tr className="border-b border-ink/5 bg-paper/40">
+                    <td colSpan={4} className="px-4 py-4">
+                      <form
+                        onSubmit={(e) => resetPassword(e, p.id)}
+                        className="max-w-sm space-y-2"
+                      >
+                        <label className="block text-sm">
+                          <span className="block text-ink/60 mb-1">
+                            Password baru untuk &ldquo;{p.username}&rdquo;
+                          </span>
+                          <input
+                            type="password"
+                            value={passwordBaru}
+                            onChange={(e) => setPasswordBaru(e.target.value)}
+                            required
+                            minLength={6}
+                            placeholder="min. 6 karakter"
+                            autoFocus
+                            className="w-full border border-ink/15 rounded-sm px-3 py-2 text-sm"
+                          />
+                        </label>
+                        {errorReset && (
+                          <p className="text-rust text-xs">{errorReset}</p>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="submit"
+                            disabled={memproses === p.id}
+                            className="px-3 py-1.5 bg-ink text-white text-xs font-medium rounded-sm hover:bg-ink/90 transition-colors disabled:opacity-50"
+                          >
+                            {memproses === p.id
+                              ? "Menyimpan..."
+                              : "Simpan Password Baru"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={tutupFormReset}
+                            disabled={memproses === p.id}
+                            className="px-3 py-1.5 text-xs text-ink/60 hover:text-ink transition-colors"
+                          >
+                            Batal
+                          </button>
+                        </div>
+                      </form>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))
             )}
           </tbody>

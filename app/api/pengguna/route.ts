@@ -215,6 +215,70 @@ export async function PATCH(request: NextRequest) {
 }
 
 /**
+ * PUT /api/pengguna
+ * Body: { id: string, password: string }
+ * Reset password akun yang sudah ada (mis. staf lupa password).
+ * Sama seperti PATCH (ubah peran): tidak bisa dipakai untuk akun
+ * sendiri (pakai halaman "Ubah Password" untuk itu) atau untuk
+ * akun superadmin lain -- supaya satu superadmin tidak bisa
+ * mengambil alih akun superadmin lain lewat reset password diam-diam.
+ */
+export async function PUT(request: NextRequest) {
+  const superadmin = await pastikanSuperadmin();
+  if (!superadmin) return tanggapanTanpaIzin();
+
+  const body = await request.json().catch(() => null);
+  const id = typeof body?.id === "string" ? body.id : "";
+  const password = typeof body?.password === "string" ? body.password : "";
+
+  if (!id) {
+    return NextResponse.json({ error: "id wajib diisi." }, { status: 400 });
+  }
+  if (!password || password.length < 6) {
+    return NextResponse.json(
+      { error: "Password minimal 6 karakter." },
+      { status: 400 },
+    );
+  }
+  if (id === superadmin.id) {
+    return NextResponse.json(
+      {
+        error:
+          "Tidak bisa reset password akun sendiri lewat sini -- gunakan halaman Ubah Password.",
+      },
+      { status: 400 },
+    );
+  }
+
+  const admin = createAdminClient();
+
+  // Jangan izinkan reset password superadmin LAIN lewat API ini,
+  // konsisten dengan pembatasan yang sama di PATCH (ubah peran) dan
+  // DELETE (hapus akun) di bawah.
+  const { data: target, error: errAmbil } =
+    await admin.auth.admin.getUserById(id);
+  if (errAmbil || !target.user) {
+    return NextResponse.json(
+      { error: "Pengguna tidak ditemukan." },
+      { status: 404 },
+    );
+  }
+  if (peranDariUser(target.user) === "superadmin") {
+    return NextResponse.json(
+      { error: "Password superadmin tidak bisa direset lewat halaman ini." },
+      { status: 400 },
+    );
+  }
+
+  const { error } = await admin.auth.admin.updateUserById(id, { password });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  return NextResponse.json({ data: { id } });
+}
+
+/**
  * DELETE /api/pengguna
  * Body: { id: string }
  * Menghapus akun. Superadmin tidak bisa menghapus dirinya sendiri
