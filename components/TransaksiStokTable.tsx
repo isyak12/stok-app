@@ -21,12 +21,121 @@ function formatTanggal(iso: string) {
   }).format(new Date(iso));
 }
 
+// Grid thumbnail kecil untuk lampiran/foto bukti, dipakai bareng di
+// TransaksiStokTable dan StokOpnameTable. Maksimal 4 thumbnail
+// ditampilkan sekaligus -- sisanya diringkas jadi "+N" yang tetap
+// bisa diklik untuk buka lightbox mulai dari foto ke-5.
+function GridLampiran({
+  urls,
+  onKlikFoto,
+}: {
+  urls: string[];
+  onKlikFoto: (index: number) => void;
+}) {
+  if (urls.length === 0) {
+    return <span className="text-ink/30 text-xs">—</span>;
+  }
+  const MAKS_TAMPIL = 4;
+  const tampil = urls.slice(0, MAKS_TAMPIL);
+  const sisa = urls.length - MAKS_TAMPIL;
+
+  return (
+    <div className="flex gap-1">
+      {tampil.map((url, i) => (
+        <button
+          key={url}
+          type="button"
+          onClick={() => onKlikFoto(i)}
+          className="relative w-9 h-9 rounded-sm overflow-hidden border border-ink/15 hover:border-ink/40 transition-colors shrink-0"
+          title={`Lihat foto ${i + 1}`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={url}
+            alt={`Lampiran ${i + 1}`}
+            className="w-full h-full object-cover"
+          />
+          {i === MAKS_TAMPIL - 1 && sisa > 0 && (
+            <span className="absolute inset-0 bg-ink/70 flex items-center justify-center text-paper text-[11px] font-medium">
+              +{sisa}
+            </span>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Lightbox sederhana: overlay gelap penuh layar dengan navigasi
+// sebelumnya/berikutnya kalau lampirannya lebih dari satu.
+function Lightbox({
+  urls,
+  index,
+  onIndexChange,
+  onTutup,
+}: {
+  urls: string[];
+  index: number;
+  onIndexChange: (i: number) => void;
+  onTutup: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 bg-ink/80 flex items-center justify-center p-4 z-50"
+      onClick={onTutup}
+    >
+      <div
+        className="relative max-w-full max-h-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={urls[index]}
+          alt={`Lampiran ${index + 1}`}
+          className="max-w-full max-h-[85vh] rounded-sm"
+        />
+        {urls.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={() =>
+                onIndexChange((index - 1 + urls.length) % urls.length)
+              }
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-ink/70 text-paper flex items-center justify-center hover:bg-ink"
+              aria-label="Foto sebelumnya"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              onClick={() => onIndexChange((index + 1) % urls.length)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-ink/70 text-paper flex items-center justify-center hover:bg-ink"
+              aria-label="Foto berikutnya"
+            >
+              ›
+            </button>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-ink/70 text-paper text-[11px] font-mono">
+              {index + 1} / {urls.length}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function TransaksiStokTable({
   data,
   daftarCabang,
   onBatalkan,
 }: Props) {
   const [memproses, setMemproses] = useState<string | null>(null);
+  // Lampiran yang sedang dibuka di lightbox: transaksi id + index
+  // foto yang lagi ditampilkan. null = lightbox tertutup.
+  const [lightbox, setLightbox] = useState<{
+    transaksiId: string;
+    index: number;
+  } | null>(null);
 
   const namaCabang = (cabangId: string) =>
     daftarCabang.find((c) => c.id === cabangId)?.nama ?? "—";
@@ -57,6 +166,10 @@ export default function TransaksiStokTable({
       setMemproses(null);
     }
   }
+
+  const transaksiLightbox = lightbox
+    ? data.find((t) => t.id === lightbox.transaksiId)
+    : null;
 
   return (
     <div className="bg-white border border-ink/10 rounded-sm overflow-hidden">
@@ -139,23 +252,12 @@ export default function TransaksiStokTable({
                 </td>
 
                 <td className="px-4 py-3">
-                  {t.lampiranUrls.length > 0 ? (
-                    <div className="flex gap-1.5 flex-wrap">
-                      {t.lampiranUrls.map((url, i) => (
-                        <a
-                          key={url}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-ink/60 underline hover:text-ink"
-                        >
-                          File {i + 1}
-                        </a>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className="text-ink/30 text-xs">—</span>
-                  )}
+                  <GridLampiran
+                    urls={t.lampiranUrls}
+                    onKlikFoto={(index) =>
+                      setLightbox({ transaksiId: t.id, index })
+                    }
+                  />
                 </td>
 
                 <td className="px-4 py-3 text-ink/70">
@@ -202,6 +304,17 @@ export default function TransaksiStokTable({
           )}
         </tbody>
       </table>
+
+      {lightbox && transaksiLightbox && (
+        <Lightbox
+          urls={transaksiLightbox.lampiranUrls}
+          index={lightbox.index}
+          onIndexChange={(i) =>
+            setLightbox({ transaksiId: lightbox.transaksiId, index: i })
+          }
+          onTutup={() => setLightbox(null)}
+        />
+      )}
     </div>
   );
 }

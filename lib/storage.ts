@@ -859,6 +859,7 @@ type BarisStokOpname = {
   transaksi_id: string | null;
   dibuat_oleh_nama: string | null;
   dibuat_pada: string;
+  stok_opname_lampiran: { url: string }[] | null;
 };
 
 function keStokOpname(baris: BarisStokOpname): StokOpname {
@@ -874,6 +875,7 @@ function keStokOpname(baris: BarisStokOpname): StokOpname {
     transaksiId: baris.transaksi_id,
     dibuatOlehNama: baris.dibuat_oleh_nama,
     dibuatPada: baris.dibuat_pada,
+    lampiranUrls: (baris.stok_opname_lampiran ?? []).map((l) => l.url),
   };
 }
 
@@ -894,7 +896,7 @@ export function useStokOpname(produkId: string) {
     const { data: baris, error } = await supabase
       .from("stok_opname")
       .select(
-        "id, produk_id, cabang_id, stok_sistem, stok_fisik, selisih, alasan, catatan, transaksi_id, dibuat_oleh_nama, dibuat_pada",
+        "id, produk_id, cabang_id, stok_sistem, stok_fisik, selisih, alasan, catatan, transaksi_id, dibuat_oleh_nama, dibuat_pada, stok_opname_lampiran(url)",
       )
       .eq("produk_id", produkId)
       .order("dibuat_pada", { ascending: false });
@@ -913,22 +915,86 @@ export function useStokOpname(produkId: string) {
     muatUlang();
   }, [muatUlang]);
 
+  // Numpang di bucket "bukti-transaksi" yang sudah ada (lihat
+  // supabase/migrasi_bukti_transaksi_stok.sql) -- prefix path
+  // "opname/..." supaya tidak campur dengan file bukti transaksi
+  // biasa, tanpa perlu bucket & policy storage baru.
+  const NAMA_BUCKET_BUKTI = "bukti-transaksi";
+
+  async function uploadLampiranOpname(
+    produkId: string,
+    files: File[],
+  ): Promise<{ url: string; path: string }[]> {
+    const hasilUpload: { url: string; path: string }[] = [];
+    try {
+      for (const file of files) {
+        const ext = file.name.split(".").pop();
+        const path = `opname/${produkId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error } = await supabase.storage
+          .from(NAMA_BUCKET_BUKTI)
+          .upload(path, file);
+        if (error) {
+          throw new Error(
+            `Gagal mengunggah foto (${file.name}): ${error.message}`,
+          );
+        }
+        const { data } = supabase.storage
+          .from(NAMA_BUCKET_BUKTI)
+          .getPublicUrl(path);
+        hasilUpload.push({ url: data.publicUrl, path });
+      }
+      return hasilUpload;
+    } catch (err) {
+      if (hasilUpload.length > 0) {
+        await supabase.storage
+          .from(NAMA_BUCKET_BUKTI)
+          .remove(hasilUpload.map((f) => f.path))
+          .catch(() => {
+            // Gagal membersihkan bukan hal fatal -- error asli (upload)
+            // yang lebih penting untuk ditampilkan ke user.
+          });
+      }
+      throw err;
+    }
+  }
+
   const catat = useCallback(
     async (
       cabangId: string,
       stokFisik: number,
       alasan?: string,
       catatan?: string,
+      lampiranFiles?: File[],
     ) => {
+      // Foto opsional -- kalau tidak ada file dipilih, langsung
+      // panggil RPC tanpa upload apa pun.
+      let lampiran: { url: string; path: string }[] = [];
+      if (lampiranFiles && lampiranFiles.length > 0) {
+        lampiran = await uploadLampiranOpname(produkId, lampiranFiles);
+      }
+
       const { error } = await supabase.rpc("catat_stok_opname", {
         p_produk_id: produkId,
         p_cabang_id: cabangId,
         p_stok_fisik: stokFisik,
         p_alasan: alasan?.trim() ? alasan.trim() : null,
         p_catatan: catatan?.trim() ? catatan.trim() : null,
+        p_lampiran_urls: lampiran.length > 0 ? lampiran.map((f) => f.url) : null,
       });
 
       if (error) {
+        // RPC gagal SETELAH foto sudah terunggah -- hapus lagi supaya
+        // tidak jadi sampah yatim di bucket tanpa opname yang mengacu
+        // ke situ.
+        if (lampiran.length > 0) {
+          await supabase.storage
+            .from(NAMA_BUCKET_BUKTI)
+            .remove(lampiran.map((f) => f.path))
+            .catch(() => {
+              // Gagal membersihkan bukan hal fatal -- error asli (RPC)
+              // yang lebih penting untuk dilempar ke pemanggil.
+            });
+        }
         // Tidak setError di sini: pesan error ditampilkan langsung di
         // form (lihat StokOpnameForm) supaya tidak muncul dobel.
         throw error;

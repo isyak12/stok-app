@@ -81,6 +81,11 @@ export type StokOpname = {
   transaksiId: string | null; // null kalau selisih = 0 (tidak ada penyesuaian)
   dibuatOlehNama: string | null;
   dibuatPada: string; // ISO date string
+  // URL publik foto bukti hitung fisik -- OPSIONAL (beda dari bukti
+  // transaksi yang wajib), boleh lebih dari satu. Array kosong untuk
+  // opname lama (sebelum fitur ini ada) atau yang sengaja tidak
+  // difoto.
+  lampiranUrls: string[];
 };
 
 // Satu baris jejak audit dari tabel log_aktivitas_barang (lihat

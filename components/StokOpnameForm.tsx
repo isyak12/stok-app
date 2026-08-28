@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ClipboardCheck } from "lucide-react";
+import { ClipboardCheck, ImagePlus, X } from "lucide-react";
 import { AlasanOpname, Barang } from "@/lib/types";
 import { useCabang } from "@/lib/storage";
 import { pesanError } from "@/lib/error";
@@ -13,6 +13,12 @@ const LABEL_ALASAN: Record<AlasanOpname, string> = {
   lainnya: "Lainnya",
 };
 
+// Batas ukuran & jumlah foto, dijaga di sisi client supaya user dapat
+// pesan error yang jelas sebelum upload dicoba (sama pola dengan
+// TransferStokTable/TransaksiStokForm).
+const MAKS_UKURAN_FOTO_MB = 5;
+const MAKS_JUMLAH_FOTO = 6;
+
 type Props = {
   barang: Barang;
   onCatat: (
@@ -20,6 +26,7 @@ type Props = {
     stokFisik: number,
     alasan?: string,
     catatan?: string,
+    lampiranFiles?: File[],
   ) => Promise<void>;
 };
 
@@ -33,6 +40,9 @@ export default function StokOpnameForm({ barang, onCatat }: Props) {
   const [stokFisik, setStokFisik] = useState<number | "">("");
   const [alasan, setAlasan] = useState<AlasanOpname | "">("");
   const [catatan, setCatatan] = useState("");
+  // Foto bukti hitung fisik -- OPSIONAL, boleh lebih dari satu.
+  const [foto, setFoto] = useState<File[]>([]);
+  const [previewFoto, setPreviewFoto] = useState<string[]>([]);
   const [menyimpan, setMenyimpan] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sukses, setSukses] = useState<string | null>(null);
@@ -50,6 +60,44 @@ export default function StokOpnameForm({ barang, onCatat }: Props) {
     stokFisik === "" || stokSistem === undefined
       ? null
       : stokFisik - stokSistem;
+
+  function tambahFoto(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    const dipilih = Array.from(files);
+
+    if (foto.length + dipilih.length > MAKS_JUMLAH_FOTO) {
+      setError(`Maksimal ${MAKS_JUMLAH_FOTO} foto per opname.`);
+      return;
+    }
+    for (const file of dipilih) {
+      if (!file.type.startsWith("image/")) {
+        setError("File harus berupa gambar (JPG, PNG, dsb).");
+        return;
+      }
+      if (file.size > MAKS_UKURAN_FOTO_MB * 1024 * 1024) {
+        setError(`Ukuran tiap foto maksimal ${MAKS_UKURAN_FOTO_MB}MB.`);
+        return;
+      }
+    }
+    setError(null);
+    setFoto((f) => [...f, ...dipilih]);
+    setPreviewFoto((p) => [
+      ...p,
+      ...dipilih.map((f) => URL.createObjectURL(f)),
+    ]);
+  }
+
+  function hapusFoto(index: number) {
+    URL.revokeObjectURL(previewFoto[index]);
+    setFoto((f) => f.filter((_, i) => i !== index));
+    setPreviewFoto((p) => p.filter((_, i) => i !== index));
+  }
+
+  function resetFoto() {
+    previewFoto.forEach((url) => URL.revokeObjectURL(url));
+    setFoto([]);
+    setPreviewFoto([]);
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -78,7 +126,7 @@ export default function StokOpnameForm({ barang, onCatat }: Props) {
     setMenyimpan(true);
     try {
       const alasanLabel = alasan ? LABEL_ALASAN[alasan] : undefined;
-      await onCatat(cabangId, stokFisik, alasanLabel, catatan);
+      await onCatat(cabangId, stokFisik, alasanLabel, catatan, foto);
       setSukses(
         selisih === 0 || selisih === null
           ? "Opname dicatat. Stok sistem sudah cocok dengan hitungan fisik."
@@ -87,6 +135,7 @@ export default function StokOpnameForm({ barang, onCatat }: Props) {
       setStokFisik("");
       setAlasan("");
       setCatatan("");
+      resetFoto();
     } catch (err) {
       setError(pesanError(err, "Gagal mencatat stok opname."));
     } finally {
@@ -204,7 +253,7 @@ export default function StokOpnameForm({ barang, onCatat }: Props) {
         </label>
       )}
 
-      <label className="block mb-5">
+      <label className="block mb-4">
         <span className="text-[11px] uppercase tracking-wider text-ink/50 block mb-1.5">
           Catatan {selisih !== null && selisih !== 0 ? "" : "(opsional)"}
         </span>
@@ -215,6 +264,56 @@ export default function StokOpnameForm({ barang, onCatat }: Props) {
           className="input"
         />
       </label>
+
+      <div className="block mb-5">
+        <span className="text-[11px] uppercase tracking-wider text-ink/50 block mb-1.5">
+          Foto bukti hitung fisik (opsional)
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {previewFoto.map((url, i) => (
+            <div
+              key={url}
+              className="relative w-16 h-16 rounded-sm overflow-hidden border border-ink/15 group"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={url}
+                alt={`Foto bukti ${i + 1}`}
+                className="w-full h-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => hapusFoto(i)}
+                className="absolute inset-0 bg-ink/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-paper transition-opacity"
+                aria-label="Hapus foto"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          ))}
+          {foto.length < MAKS_JUMLAH_FOTO && (
+            <label className="w-16 h-16 flex flex-col items-center justify-center gap-1 border border-dashed border-ink/25 rounded-sm text-ink/40 hover:text-ink/70 hover:border-ink/40 cursor-pointer transition-colors">
+              <ImagePlus size={18} />
+              <span className="text-[10px]">Tambah</span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  tambahFoto(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          )}
+        </div>
+        <p className="text-[11px] text-ink/40 mt-1.5">
+          Boleh lebih dari satu foto, maksimal {MAKS_JUMLAH_FOTO}. Tidak
+          wajib diisi.
+        </p>
+      </div>
 
       <button
         type="submit"
