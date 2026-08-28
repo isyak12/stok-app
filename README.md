@@ -11,8 +11,8 @@ Demo: [stok-app-fawn.vercel.app](https://stok-app-fawn.vercel.app)
 - **Tambah Barang** *(khusus admin)*: form untuk mencatat barang baru (SKU, kategori, cabang, jumlah, satuan, stok minimum, harga beli/jual, lokasi).
 - **Ubah Barang**: edit detail barang. Staf gudang bisa memperbarui jumlah/lokasi/stok minimum; SKU, nama, kategori, dan harga hanya bisa diubah admin.
 - **Hapus Barang** *(khusus admin)*.
-- **Transaksi Stok**: catat barang masuk/keluar per cabang, lengkap dengan riwayat dan opsi pembatalan transaksi.
-- **Transfer Stok**: pindahkan stok antar cabang (kirim → konfirmasi diterima), dengan opsi pembatalan selama transfer masih berstatus "terkirim".
+- **Transaksi Stok**: catat barang masuk/keluar per cabang, lengkap dengan riwayat dan opsi pembatalan transaksi. Tanggal & waktu transaksi bisa diatur manual (mis. mencatat transaksi minggu lalu yang lupa dicatat — maksimal mundur 30 hari, tidak boleh di masa depan). Setiap transaksi **wajib** dilampiri minimal 1 bukti foto/dokumen (bisa lebih dari satu file).
+- **Transfer Stok**: pindahkan stok antar cabang (kirim → konfirmasi diterima), dengan opsi pembatalan selama transfer masih berstatus "terkirim". Saat konfirmasi diterima, staf cabang tujuan **wajib** mengunggah foto bukti penerimaan barang, dan bisa menambahkan catatan penerimaan terpisah dari catatan pengiriman (mis. kalau kondisi/jumlah fisik yang sampai berbeda).
 - **Stok Opname**: rekonsiliasi stok fisik vs stok sistem per cabang. Kalau ada selisih, sistem otomatis membuat transaksi penyesuaian dan menyesuaikan stok cabang tersebut.
 - **Riwayat Mutasi**: linimasa gabungan semua pergerakan stok satu barang (transaksi + transfer), terurut dari yang terbaru.
 - **Multi-Cabang**: setiap barang bisa punya baris stok berbeda di tiap cabang (jumlah, stok minimum, lokasi masing-masing).
@@ -20,7 +20,7 @@ Demo: [stok-app-fawn.vercel.app](https://stok-app-fawn.vercel.app)
 - **Log Aktivitas Barang** *(khusus admin ke atas)*: jejak audit otomatis siapa menambahkan barang baru, mengurangi stok (dari transaksi keluar, transfer, opname, maupun edit manual), atau menghapus barang — tercatat lewat trigger database, tidak bisa diedit dari aplikasi.
 - **Role & Akses**: tiga peran pengguna — **superadmin** (akses penuh + kelola pengguna), **admin** (akses penuh ke data barang), dan **staf gudang** (akses terbatas ke pergerakan stok, tidak bisa tambah/hapus barang atau ubah data master/harga). Lihat bagian [Role & Akses](#role--akses).
 - **Login**: hanya user yang terdaftar yang bisa membuka dan mengubah data (Supabase Auth, login pakai username + kata sandi — di balik layar tetap email, lihat `lib/username.ts`).
-- Data disimpan di **Supabase** (PostgreSQL), lewat tabel `produk` (data master barang), `stok` (jumlah & lokasi per cabang), `cabang`, `transaksi_stok`, `transfer_stok`, `stok_opname`, dan `log_aktivitas_barang`.
+- Data disimpan di **Supabase** (PostgreSQL), lewat tabel `produk` (data master barang), `stok` (jumlah & lokasi per cabang), `cabang`, `transaksi_stok`, `transaksi_stok_lampiran` (bukti foto/dokumen per transaksi), `transfer_stok`, `stok_opname`, dan `log_aktivitas_barang`. File bukti (foto penerimaan transfer & lampiran transaksi) disimpan di Supabase Storage, bucket `bukti-transfer` dan `bukti-transaksi`.
 
 ## Setup Supabase
 
@@ -43,6 +43,8 @@ Demo: [stok-app-fawn.vercel.app](https://stok-app-fawn.vercel.app)
    | 12 | `supabase/migrasi_log_aktivitas_barang.sql` | Tabel `log_aktivitas_barang` + trigger otomatis untuk mencatat siapa menambah/mengurangi/menghapus barang. **Jalankan setelah** `migrasi_cabang.sql` dan `migrasi_superadmin.sql` (butuh `saya_admin()`). |
    | 13 | `supabase/migrasi_kunci_jumlah_manual.sql` | Kunci kolom `stok.jumlah` supaya tidak bisa diubah manual lewat form Ubah Barang — hanya lewat jalur resmi (transaksi/transfer/opname/pembatalan). **Jalankan setelah** semua file transaksi/transfer/opname di atas. |
    | 14 | `supabase/migrasi_tanggal_manual_transaksi.sql` | Izinkan atur tanggal & waktu manual saat mencatat transaksi stok masuk/keluar (mis. transaksi minggu lalu yang lupa dicatat), maksimal mundur 30 hari dan tidak boleh di masa depan. **Jalankan setelah** `migrasi_kunci_jumlah_manual.sql`. |
+   | 15 | `supabase/migrasi_bukti_penerimaan.sql` | Tambah kolom `bukti_foto_url` & `catatan_penerimaan` di `transfer_stok`, bucket Storage `bukti-transfer`, dan wajibkan foto bukti saat `konfirmasi_terima_transfer`. **Jalankan setelah** `migrasi_kunci_jumlah_manual.sql`. |
+   | 16 | `supabase/migrasi_bukti_transaksi_stok.sql` | Tabel `transaksi_stok_lampiran` (multi-file per transaksi), bucket Storage `bukti-transaksi`, dan wajibkan minimal 1 lampiran bukti di `catat_transaksi_stok`. **Jalankan setelah** `migrasi_tanggal_manual_transaksi.sql`. |
 
 3. (Opsional) Jalankan `supabase/seed.sql` untuk mengisi beberapa data contoh, biar Dasbor & Daftar Stok langsung terisi.
 4. Buka **Project Settings > API**, salin **Project URL**, **anon public key**, dan **service_role key**.
@@ -204,8 +206,12 @@ supabase/
   migrasi_perbaikan_peran.sql               → Pindahkan sumber peran ke app_metadata (tutup celah privilege escalation)
   migrasi_superadmin.sql                     → Tambah peran superadmin di atas admin
   migrasi_log_aktivitas_barang.sql            → Tabel log_aktivitas_barang + trigger tambah/hapus/kurangi
-  set-peran-user.sql                           → Contoh set peran beberapa user sekaligus
-  seed.sql                                      → Data contoh (opsional)
+  migrasi_kunci_jumlah_manual.sql              → Kunci stok.jumlah, hanya bisa diubah lewat function resmi
+  migrasi_tanggal_manual_transaksi.sql          → Izinkan atur tanggal & waktu manual saat catat transaksi
+  migrasi_bukti_penerimaan.sql                   → Bukti foto wajib saat konfirmasi terima transfer (bucket bukti-transfer)
+  migrasi_bukti_transaksi_stok.sql                → Lampiran bukti wajib (multi-file) di transaksi stok (bucket bukti-transaksi)
+  set-peran-user.sql                                → Contoh set peran beberapa user sekaligus
+  seed.sql                                           → Data contoh (opsional)
 ```
 
 ## Langkah lanjutan yang mungkin berguna
