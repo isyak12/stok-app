@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, ArrowRightLeft } from "lucide-react";
+import { Bell } from "lucide-react";
 import { useCabang, useTransferMenunggu } from "@/lib/storage";
 
 // Format waktu relatif singkat ("5 menit lalu", "3 jam lalu", dst).
@@ -96,13 +96,11 @@ export default function NotifikasiTransferMasuk() {
                     <p className="text-sm font-medium truncate">
                       {t.produkNama}
                     </p>
-                    <p className="text-xs text-ink/60 mt-0.5 flex items-center gap-1">
+                    <p className="text-xs text-ink/60 mt-0.5">
                       {namaCabang(t.dariCabangId)}
-                      <ArrowRightLeft size={11} className="text-ink/30 shrink-0" />
+                      <span className="text-ink/30 mx-1">→</span>
                       {namaCabang(t.keCabangId)}
-                      <span className="text-ink/40">
-                        · {t.jumlah} unit
-                      </span>
+                      <span className="text-ink/40"> · {t.jumlah} unit</span>
                     </p>
                     <p className="text-[11px] text-ink/40 mt-0.5">
                       {waktuRelatif(t.dibuatPada)}
