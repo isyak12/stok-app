@@ -15,7 +15,11 @@ type Props = {
 };
 
 export default function TransferStokForm({ cabangDefaultId, onCatat }: Props) {
-  const { data: daftarCabang, siap: cabangSiap } = useCabang();
+  const {
+    data: daftarCabang,
+    siap: cabangSiap,
+    error: errorCabang,
+  } = useCabang();
   const [dariCabangId, setDariCabangId] = useState(cabangDefaultId ?? "");
   const [keCabangId, setKeCabangId] = useState("");
   const [jumlah, setJumlah] = useState<number | "">("");
@@ -95,6 +99,11 @@ export default function TransferStokForm({ cabangDefaultId, onCatat }: Props) {
               </option>
             ))}
           </select>
+          {errorCabang && (
+            <span className="text-xs text-rust block mt-1.5">
+              Gagal memuat daftar cabang: {errorCabang}
+            </span>
+          )}
         </label>
 
         <label className="block">

@@ -37,6 +37,18 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isLoginPage = request.nextUrl.pathname.startsWith("/login");
+  const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
+
+  if (!user && isApiRoute) {
+    // Route API dipanggil lewat fetch(), bukan navigasi browser --
+    // kembalikan 401 JSON supaya kode client bisa menanganinya
+    // sebagai error biasa, bukan redirect ke halaman HTML /login
+    // (yang kalau diikuti fetch() akan gagal di-parse sebagai JSON).
+    return NextResponse.json(
+      { error: "Sesi login tidak ditemukan atau sudah berakhir." },
+      { status: 401 },
+    );
+  }
 
   if (!user && !isLoginPage) {
     const url = request.nextUrl.clone();

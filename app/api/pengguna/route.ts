@@ -192,8 +192,13 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
+  // Gabungkan (merge) dengan app_metadata yang sudah ada, bukan
+  // menimpa seluruh objeknya -- Admin API menimpa app_metadata utuh
+  // per field yang dikirim di sini, jadi kalau nanti ada field lain
+  // selain "peran" di app_metadata, field itu tidak boleh ikut hilang
+  // hanya karena mengubah peran.
   const { data, error } = await admin.auth.admin.updateUserById(id, {
-    app_metadata: { peran },
+    app_metadata: { ...target.user.app_metadata, peran },
   });
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });

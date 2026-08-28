@@ -371,28 +371,47 @@ export function useTransaksiStok(produkId: string) {
 
   const NAMA_BUCKET_BUKTI = "bukti-transaksi";
 
+  // Mengembalikan path Storage (bukan URL publik) di samping URL, supaya
+  // uploadLampiran bisa membersihkan file itu lagi kalau langkah
+  // berikutnya (RPC catat_transaksi_stok) gagal.
   async function uploadLampiran(
     produkId: string,
     files: File[],
-  ): Promise<string[]> {
-    const urls: string[] = [];
-    for (const file of files) {
-      const ext = file.name.split(".").pop();
-      const path = `${produkId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage
-        .from(NAMA_BUCKET_BUKTI)
-        .upload(path, file);
-      if (error) {
-        throw new Error(
-          `Gagal mengunggah lampiran (${file.name}): ${error.message}`,
-        );
+  ): Promise<{ url: string; path: string }[]> {
+    const hasilUpload: { url: string; path: string }[] = [];
+    try {
+      for (const file of files) {
+        const ext = file.name.split(".").pop();
+        const path = `${produkId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error } = await supabase.storage
+          .from(NAMA_BUCKET_BUKTI)
+          .upload(path, file);
+        if (error) {
+          throw new Error(
+            `Gagal mengunggah lampiran (${file.name}): ${error.message}`,
+          );
+        }
+        const { data } = supabase.storage
+          .from(NAMA_BUCKET_BUKTI)
+          .getPublicUrl(path);
+        hasilUpload.push({ url: data.publicUrl, path });
       }
-      const { data } = supabase.storage
-        .from(NAMA_BUCKET_BUKTI)
-        .getPublicUrl(path);
-      urls.push(data.publicUrl);
+      return hasilUpload;
+    } catch (err) {
+      // Salah satu file gagal diunggah di tengah jalan -- bersihkan
+      // file-file sebelumnya yang sudah kadung terunggah di percobaan
+      // ini, supaya tidak jadi sampah tak terpakai di bucket.
+      if (hasilUpload.length > 0) {
+        await supabase.storage
+          .from(NAMA_BUCKET_BUKTI)
+          .remove(hasilUpload.map((f) => f.path))
+          .catch(() => {
+            // Gagal membersihkan bukan hal fatal -- error asli (upload)
+            // yang lebih penting untuk ditampilkan ke user.
+          });
+      }
+      throw err;
     }
-    return urls;
   }
 
   // Catat transaksi stok masuk/keluar baru. Bukti (foto/dokumen) wajib
@@ -414,14 +433,14 @@ export function useTransaksiStok(produkId: string) {
         throw new Error("Bukti (foto/dokumen) wajib diunggah minimal 1 file.");
       }
 
-      const lampiranUrls = await uploadLampiran(produkId, lampiranFiles);
+      const lampiran = await uploadLampiran(produkId, lampiranFiles);
 
       const { error } = await supabase.rpc("catat_transaksi_stok", {
         p_produk_id: produkId,
         p_cabang_id: cabangId,
         p_tipe: tipe,
         p_jumlah: jumlah,
-        p_lampiran_urls: lampiranUrls,
+        p_lampiran_urls: lampiran.map((f) => f.url),
         p_catatan: catatan?.trim() ? catatan.trim() : null,
         p_pihak: pihak?.trim() ? pihak.trim() : null,
         p_no_referensi: noReferensi?.trim() ? noReferensi.trim() : null,
@@ -429,6 +448,17 @@ export function useTransaksiStok(produkId: string) {
       });
 
       if (error) {
+        // RPC gagal (mis. stok tidak cukup) SETELAH file sudah
+        // terunggah -- hapus lagi file-file itu supaya tidak jadi
+        // sampah yatim di bucket "bukti-transaksi" tanpa transaksi
+        // yang mengacu ke situ.
+        await supabase.storage
+          .from(NAMA_BUCKET_BUKTI)
+          .remove(lampiran.map((f) => f.path))
+          .catch(() => {
+            // Gagal membersihkan bukan hal fatal -- error asli (RPC)
+            // yang lebih penting untuk dilempar ke pemanggil.
+          });
         throw error;
       }
 
@@ -468,19 +498,21 @@ export function useTransaksiStok(produkId: string) {
 export function useCabang() {
   const [data, setData] = useState<Cabang[]>([]);
   const [siap, setSiap] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     supabase
       .from("cabang")
       .select("id, nama, kode")
       .order("nama", { ascending: true })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        setError(error ? error.message : null);
         setData(data ?? []);
         setSiap(true);
       });
   }, []);
 
-  return { data, siap };
+  return { data, siap, error };
 }
 
 // Bentuk baris tabel transfer_stok dari Supabase

@@ -23,7 +23,11 @@ type Props = {
 };
 
 export default function StokOpnameForm({ barang, onCatat }: Props) {
-  const { data: daftarCabang, siap: cabangSiap } = useCabang();
+  const {
+    data: daftarCabang,
+    siap: cabangSiap,
+    error: errorCabang,
+  } = useCabang();
   const [cabangId, setCabangId] = useState(barang.cabangId);
   const [stokFisik, setStokFisik] = useState<number | "">("");
   const [alasan, setAlasan] = useState<AlasanOpname | "">("");
@@ -135,6 +139,11 @@ export default function StokOpnameForm({ barang, onCatat }: Props) {
             </option>
           ))}
         </select>
+        {errorCabang && (
+          <span className="text-xs text-rust block mt-1.5">
+            Gagal memuat daftar cabang: {errorCabang}
+          </span>
+        )}
       </label>
 
       <div className="mb-4 px-4 py-3 bg-paper/60 border border-ink/10 rounded-sm text-sm">

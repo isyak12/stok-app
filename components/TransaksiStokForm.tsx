@@ -34,7 +34,11 @@ function keDatetimeLocal(d: Date) {
 }
 
 export default function TransaksiStokForm({ cabangDefaultId, onCatat }: Props) {
-  const { data: daftarCabang, siap: cabangSiap } = useCabang();
+  const {
+    data: daftarCabang,
+    siap: cabangSiap,
+    error: errorCabang,
+  } = useCabang();
   const [cabangId, setCabangId] = useState(cabangDefaultId ?? "");
 
   useEffect(() => {
@@ -64,6 +68,11 @@ export default function TransaksiStokForm({ cabangDefaultId, onCatat }: Props) {
             </option>
           ))}
         </select>
+        {errorCabang && (
+          <span className="text-xs text-rust block mt-1.5">
+            Gagal memuat daftar cabang: {errorCabang}
+          </span>
+        )}
       </label>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

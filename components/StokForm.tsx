@@ -44,7 +44,11 @@ export default function StokForm({
   // supabase/migrasi_kunci_stok_minimum.sql -- kunci di sini murni UX,
   // pembatasan sebenarnya ada di database.
   const kunciStokMinimum = modeEdit && !adalahAdminAtauLebih(peran);
-  const { data: daftarCabang, siap: cabangSiap } = useCabang();
+  const {
+    data: daftarCabang,
+    siap: cabangSiap,
+    error: errorCabang,
+  } = useCabang();
   // Stok per-cabang produk ini (kosong kalau mode Tambah, karena belum ada id)
   const { data: stokPerCabang, siap: stokPerCabangSiap } = useStokPerCabang(
     awal?.id,
@@ -195,7 +199,12 @@ export default function StokForm({
               </option>
             ))}
           </select>
-          {modeEdit && (
+          {errorCabang && (
+            <span className="text-xs text-rust block mt-1.5">
+              Gagal memuat daftar cabang: {errorCabang}
+            </span>
+          )}
+          {modeEdit && !errorCabang && (
             <span className="text-xs text-ink/40 block mt-1.5">
               {!stokPerCabangSiap
                 ? "Memuat data stok per cabang..."
