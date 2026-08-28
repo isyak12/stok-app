@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowDownToLine, ArrowUpFromLine, XCircle } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ArrowDownToLine, ArrowUpFromLine, Search, XCircle } from "lucide-react";
 import { Cabang, TransaksiStok } from "@/lib/types";
 import { pesanError } from "@/lib/error";
 import { GridLampiran, Lightbox } from "@/components/LampiranFoto";
@@ -35,8 +35,34 @@ export default function TransaksiStokTable({
     index: number;
   } | null>(null);
 
+  // Pencarian & filter riwayat transaksi. Dipisah dari `data` mentah
+  // supaya prop tetap sumber data asli (dipakai lightbox dkk lewat
+  // id), sementara `hasil` di bawah cuma untuk apa yang ditampilkan
+  // di tabel.
+  const [q, setQ] = useState("");
+  const [tipeFilter, setTipeFilter] = useState<"semua" | "masuk" | "keluar">(
+    "semua",
+  );
+  const [cabangFilter, setCabangFilter] = useState("semua");
+
   const namaCabang = (cabangId: string) =>
     daftarCabang.find((c) => c.id === cabangId)?.nama ?? "—";
+
+  const hasil = useMemo(() => {
+    const qLower = q.trim().toLowerCase();
+    return data.filter((t) => {
+      const cocokTeks =
+        qLower === "" ||
+        (t.pihak ?? "").toLowerCase().includes(qLower) ||
+        (t.noReferensi ?? "").toLowerCase().includes(qLower) ||
+        (t.catatan ?? "").toLowerCase().includes(qLower) ||
+        namaCabang(t.cabangId).toLowerCase().includes(qLower);
+      const cocokTipe = tipeFilter === "semua" || t.tipe === tipeFilter;
+      const cocokCabang =
+        cabangFilter === "semua" || t.cabangId === cabangFilter;
+      return cocokTeks && cocokTipe && cocokCabang;
+    });
+  }, [data, q, tipeFilter, cabangFilter, daftarCabang]);
 
   async function batalkan(id: string) {
     if (!onBatalkan) return;
@@ -70,7 +96,49 @@ export default function TransaksiStokTable({
     : null;
 
   return (
-    <div className="bg-white border border-ink/10 rounded-sm overflow-hidden">
+    <div>
+      {data.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <div className="relative flex-1">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/40"
+            />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Cari pihak, no. referensi, catatan, atau cabang..."
+              className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
+            />
+          </div>
+          <select
+            value={tipeFilter}
+            onChange={(e) =>
+              setTipeFilter(e.target.value as "semua" | "masuk" | "keluar")
+            }
+            className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
+          >
+            <option value="semua">Semua Tipe</option>
+            <option value="masuk">Masuk</option>
+            <option value="keluar">Keluar</option>
+          </select>
+          {daftarCabang.length > 1 && (
+            <select
+              value={cabangFilter}
+              onChange={(e) => setCabangFilter(e.target.value)}
+              className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
+            >
+              <option value="semua">Semua Cabang</option>
+              {daftarCabang.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nama}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
+      <div className="bg-white border border-ink/10 rounded-sm overflow-hidden">
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-[11px] uppercase tracking-wider text-ink/50 border-b border-ink/10 bg-paper/60">
@@ -92,7 +160,7 @@ export default function TransaksiStokTable({
           </tr>
         </thead>
         <tbody>
-          {data.map((t) => {
+          {hasil.map((t) => {
             const masuk = t.tipe === "masuk";
             return (
               <tr
@@ -191,13 +259,15 @@ export default function TransaksiStokTable({
             );
           })}
 
-          {data.length === 0 && (
+          {hasil.length === 0 && (
             <tr>
               <td
                 colSpan={onBatalkan ? 9 : 8}
                 className="px-4 py-10 text-center text-ink/40 text-sm"
               >
-                Belum ada transaksi stok untuk barang ini.
+                {data.length === 0
+                  ? "Belum ada transaksi stok untuk barang ini."
+                  : "Tidak ada transaksi yang cocok. Coba kata kunci atau filter lain."}
               </td>
             </tr>
           )}
@@ -215,6 +285,7 @@ export default function TransaksiStokTable({
           labelAlt="Lampiran"
         />
       )}
+      </div>
     </div>
   );
 }

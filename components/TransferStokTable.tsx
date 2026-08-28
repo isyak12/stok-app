@@ -1,8 +1,15 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
-import { ArrowRightLeft, CheckCircle2, Clock, ImageOff, XCircle } from "lucide-react";
-import { TransferStok, Cabang } from "@/lib/types";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowRightLeft,
+  CheckCircle2,
+  Clock,
+  ImageOff,
+  Search,
+  XCircle,
+} from "lucide-react";
+import { TransferStok, Cabang, StatusTransfer } from "@/lib/types";
 import { pesanError } from "@/lib/error";
 
 type Props = {
@@ -49,6 +56,13 @@ export default function TransferStokTable({
   // Foto yang sedang diperbesar (lightbox), null = tidak ada.
   const [fotoDiperbesar, setFotoDiperbesar] = useState<string | null>(null);
 
+  // Pencarian & filter riwayat transfer.
+  const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusTransfer | "semua">(
+    "semua",
+  );
+  const [cabangFilter, setCabangFilter] = useState("semua");
+
   // Bersihkan object URL preview saat komponen unmount (mis. user
   // pindah halaman saat form konfirmasi terima masih terbuka) --
   // pakai ref supaya cleanup baca nilai preview PALING BARU, bukan
@@ -64,6 +78,26 @@ export default function TransferStokTable({
   function namaCabang(id: string) {
     return daftarCabang.find((c) => c.id === id)?.nama ?? "—";
   }
+
+  const hasil = useMemo(() => {
+    const qLower = q.trim().toLowerCase();
+    return data.filter((t) => {
+      const cocokTeks =
+        qLower === "" ||
+        (t.catatan ?? "").toLowerCase().includes(qLower) ||
+        (t.catatanPenerimaan ?? "").toLowerCase().includes(qLower) ||
+        (t.dibuatOlehNama ?? "").toLowerCase().includes(qLower) ||
+        (t.diterimaOlehNama ?? "").toLowerCase().includes(qLower) ||
+        namaCabang(t.dariCabangId).toLowerCase().includes(qLower) ||
+        namaCabang(t.keCabangId).toLowerCase().includes(qLower);
+      const cocokStatus = statusFilter === "semua" || t.status === statusFilter;
+      const cocokCabang =
+        cabangFilter === "semua" ||
+        t.dariCabangId === cabangFilter ||
+        t.keCabangId === cabangFilter;
+      return cocokTeks && cocokStatus && cocokCabang;
+    });
+  }, [data, q, statusFilter, cabangFilter, daftarCabang]);
 
   function bukaFormTerima(id: string) {
     setFormTerimaId(id);
@@ -151,7 +185,50 @@ export default function TransferStokTable({
   }
 
   return (
-    <div className="bg-white border border-ink/10 rounded-sm overflow-x-auto">
+    <div>
+      {data.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <div className="relative flex-1">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/40"
+            />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Cari catatan, dikirim/diterima oleh, atau cabang..."
+              className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as StatusTransfer | "semua")
+            }
+            className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
+          >
+            <option value="semua">Semua Status</option>
+            <option value="terkirim">Terkirim</option>
+            <option value="diterima">Diterima</option>
+            <option value="dibatalkan">Dibatalkan</option>
+          </select>
+          {daftarCabang.length > 1 && (
+            <select
+              value={cabangFilter}
+              onChange={(e) => setCabangFilter(e.target.value)}
+              className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
+            >
+              <option value="semua">Semua Cabang</option>
+              {daftarCabang.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nama}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
+      <div className="bg-white border border-ink/10 rounded-sm overflow-x-auto">
       <table className="w-full min-w-[940px] text-sm">
         <thead>
           <tr className="text-left text-[11px] uppercase tracking-wider text-ink/50 border-b border-ink/10 bg-paper/60">
@@ -175,7 +252,7 @@ export default function TransferStokTable({
           </tr>
         </thead>
         <tbody>
-          {data.map((t) => {
+          {hasil.map((t) => {
             const terkirim = t.status === "terkirim";
             const dibatalkan = t.status === "dibatalkan";
             const diterima = t.status === "diterima";
@@ -389,13 +466,15 @@ export default function TransferStokTable({
               </Fragment>
             );
           })}
-          {data.length === 0 && (
+          {hasil.length === 0 && (
             <tr>
               <td
                 colSpan={onKonfirmasiTerima || onBatalkan ? 11 : 10}
                 className="px-4 py-10 text-center text-ink/40 text-sm"
               >
-                Belum ada transfer stok untuk barang ini.
+                {data.length === 0
+                  ? "Belum ada transfer stok untuk barang ini."
+                  : "Tidak ada transfer yang cocok. Coba kata kunci atau filter lain."}
               </td>
             </tr>
           )}
@@ -415,6 +494,7 @@ export default function TransferStokTable({
           />
         </div>
       )}
+      </div>
     </div>
   );
 }

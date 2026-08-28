@@ -17,16 +17,19 @@ Aplikasi manajemen stok barang berbasis Next.js (App Router), TypeScript, dan Ta
 ### Multi-Cabang
 - Data cabang (`cabang`) dengan kode dan nama sendiri; satu produk bisa punya baris stok berbeda di tiap cabang.
 - **Transfer Stok** antar cabang: cabang asal mencatat pengiriman (**wajib unggah foto bukti sebelum kirim**), cabang tujuan **mengonfirmasi penerimaan** (wajib unggah foto bukti tersendiri) sebelum stok tujuan bertambah — status berjalan dari *Terkirim* → *Diterima*, atau bisa **dibatalkan/ditolak** selama masih *Terkirim* (dengan alasan). Riwayat transfer menampilkan foto bukti kirim dan bukti terima secara terpisah.
+- Riwayat transfer punya **pencarian** (catatan, dikirim/diterima oleh, nama cabang) dan **filter** status (Terkirim/Diterima/Dibatalkan) serta cabang.
 - Notifikasi lonceng di sidebar untuk transfer yang **masuk dan masih menunggu konfirmasi** di cabang pengguna, diperbarui otomatis lewat Supabase Realtime.
 
 ### Transaksi Stok (Masuk/Keluar)
 - Catat barang masuk/keluar per cabang sebagai jejak audit; jumlah stok di tabel `stok` diperbarui otomatis lewat trigger database.
 - Wajib melampirkan minimal satu foto/dokumen bukti transaksi (disimpan di Supabase Storage), dengan catatan, pihak terkait, dan nomor referensi opsional; tanggal transaksi bisa diatur manual.
 - Transaksi bisa **dibatalkan (void)** kalau salah catat — baris tetap tampil di riwayat (bukan dihapus) dan ditandai dibatalkan beserta alasannya, supaya jejak audit tetap utuh.
+- Riwayat transaksi punya **pencarian** (pihak, no. referensi, catatan, nama cabang) dan **filter** tipe (Masuk/Keluar) serta cabang.
 
 ### Stok Opname (Rekonsiliasi Fisik)
 - Bandingkan stok sistem vs. hasil hitung fisik per produk & cabang; selisih otomatis dihitung dan (bila ada selisih) langsung menyesuaikan stok lewat transaksi penyesuaian.
 - Alasan selisih (rusak/hilang/salah catat/lainnya) plus catatan bebas; **wajib unggah foto bukti kalau ada selisih**, opsional kalau stok cocok.
+- Riwayat opname punya **pencarian** (alasan, catatan, dicatat oleh, nama cabang) dan **filter** hasil selisih (Cocok/Lebih/Kurang) serta cabang.
 
 ### Riwayat Mutasi
 - Linimasa gabungan per barang yang menyatukan transaksi masuk/keluar dan transfer antar cabang dalam satu tampilan terurut waktu, termasuk status transfer dan status pembatalan.
@@ -39,7 +42,7 @@ Aplikasi manajemen stok barang berbasis Next.js (App Router), TypeScript, dan Ta
 - Tiga peran berjenjang:
   - **Staf Gudang** — operasional harian (stok, transaksi, transfer, opname) sesuai hak akses yang diizinkan.
   - **Admin** — semua hak staf, ditambah Tambah Barang dan Log Aktivitas.
-  - **Superadmin** — semua hak admin, ditambah halaman **Kelola Pengguna** (buat akun baru, ubah peran admin/staf, hapus akun) lewat `app/api/pengguna` yang memakai Supabase service role key.
+  - **Superadmin** — semua hak admin, ditambah halaman **Kelola Pengguna** (buat akun baru, ubah peran admin/staf, hapus akun, **reset password akun lain**) lewat `app/api/pengguna` yang memakai Supabase service role key. Reset password tidak bisa dipakai untuk akun sendiri (harus lewat halaman Ubah Password) maupun untuk akun superadmin lain — mencegah satu superadmin mengambil alih akun superadmin lain diam-diam.
 - Halaman **Ubah Password** untuk mengganti kata sandi akun sendiri.
 - Middleware me-refresh sesi login di setiap request dan mengarahkan ke `/login` bila belum login.
 
