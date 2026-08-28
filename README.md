@@ -16,7 +16,7 @@ Aplikasi manajemen stok barang berbasis Next.js (App Router), TypeScript, dan Ta
 
 ### Multi-Cabang
 - Data cabang (`cabang`) dengan kode dan nama sendiri; satu produk bisa punya baris stok berbeda di tiap cabang.
-- **Transfer Stok** antar cabang: cabang asal mencatat pengiriman, cabang tujuan **mengonfirmasi penerimaan** (wajib unggah foto bukti) sebelum stok tujuan bertambah — status berjalan dari *Terkirim* → *Diterima*, atau bisa **dibatalkan/ditolak** selama masih *Terkirim* (dengan alasan).
+- **Transfer Stok** antar cabang: cabang asal mencatat pengiriman (**wajib unggah foto bukti sebelum kirim**), cabang tujuan **mengonfirmasi penerimaan** (wajib unggah foto bukti tersendiri) sebelum stok tujuan bertambah — status berjalan dari *Terkirim* → *Diterima*, atau bisa **dibatalkan/ditolak** selama masih *Terkirim* (dengan alasan). Riwayat transfer menampilkan foto bukti kirim dan bukti terima secara terpisah.
 - Notifikasi lonceng di sidebar untuk transfer yang **masuk dan masih menunggu konfirmasi** di cabang pengguna, diperbarui otomatis lewat Supabase Realtime.
 
 ### Transaksi Stok (Masuk/Keluar)
@@ -60,6 +60,7 @@ Disimpan di **Supabase** (PostgreSQL) lewat beberapa tabel utama: `produk` (data
    - `transfer_stok.sql`, `migrasi_realtime_transfer.sql`, `pembatalan_transfer.sql`, `migrasi_batal_transfer.sql` — fitur Transfer Stok antar cabang + notifikasi realtime + pembatalan.
    - `migrasi_bukti_transaksi_stok.sql`, `fix_rls_transaksi_stok_lampiran.sql` — wajib lampiran bukti transaksi.
    - `migrasi_bukti_penerimaan.sql`, `fix_kunci_bukti_penerimaan.sql` — wajib bukti foto saat konfirmasi terima transfer.
+   - `migrasi_bukti_pengiriman.sql` — wajib bukti foto sebelum barang dikirim saat mencatat transfer (jalankan setelah `migrasi_bukti_penerimaan.sql`, pakai bucket Storage yang sama).
    - `pembatalan_transaksi.sql` — pembatalan (void) transaksi stok.
    - `stok_opname.sql`, `migrasi_bukti_opname.sql`, `migrasi_wajib_bukti_opname_selisih.sql` — fitur Stok Opname + bukti foto.
    - `migrasi_kunci_stok_minimum.sql`, `migrasi_kunci_jumlah_manual.sql` — kunci kolom stok tertentu supaya tidak diubah langsung di luar alur transaksi.
@@ -158,7 +159,7 @@ supabase/
   schema.sql, role-policies.sql, auth-policies.sql → Skema dasar & RLS
   migrasi_cabang.sql, migrasi_transaksi_cabang.sql, ... → Dukungan multi-cabang
   transaksi_stok.sql, pembatalan_transaksi.sql, migrasi_bukti_transaksi_stok.sql → Transaksi stok
-  transfer_stok.sql, migrasi_realtime_transfer.sql, pembatalan_transfer.sql, migrasi_bukti_penerimaan.sql → Transfer stok
+  transfer_stok.sql, migrasi_realtime_transfer.sql, pembatalan_transfer.sql, migrasi_bukti_penerimaan.sql, migrasi_bukti_pengiriman.sql → Transfer stok
   stok_opname.sql, migrasi_bukti_opname.sql, migrasi_wajib_bukti_opname_selisih.sql → Stok opname
   migrasi_log_aktivitas_barang.sql → Log Aktivitas Barang
   migrasi_superadmin.sql, migrasi_perbaikan_peran.sql → Peran superadmin
