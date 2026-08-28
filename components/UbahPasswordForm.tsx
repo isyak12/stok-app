@@ -152,7 +152,7 @@ export default function UbahPasswordForm() {
   }
 
   return (
-    <div className="relative max-w-md bg-paper border border-ink/10 shadow-sm">
+    <div className="relative w-full bg-paper border border-ink/10 shadow-sm">
       <div className="absolute left-0 top-0 bottom-0 w-1 divider-barcode opacity-30" />
 
       <div className="flex items-center gap-3 px-6 pt-6 pb-4">
