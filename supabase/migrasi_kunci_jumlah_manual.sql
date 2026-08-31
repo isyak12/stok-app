@@ -36,7 +36,13 @@
 --   migrasi_transaksi_cabang.sql, transfer_stok.sql, mutasi_detail.sql,
 --   pembatalan_transaksi.sql, pembatalan_transfer.sql,
 --   migrasi_batal_transfer.sql, stok_opname.sql
--- Aman dijalankan berkali-kali (idempotent).
+-- Aman dijalankan berkali-kali SELAMA dijalankan sebelum
+-- migrasi_bukti_opname.sql, migrasi_wajib_bukti_opname_selisih.sql,
+-- dan migrasi_bukti_penerimaan.sql (file-file itu menambah parameter
+-- baru ke fungsi yang sama). Kalau file ini dijalankan ULANG setelah
+-- ketiganya, versi lawas fungsi bisa hidup lagi sebagai overload --
+-- makanya bagian 4 dan 8 di atas sudah ditambah `drop function`
+-- untuk mencegah itu.
 -- ============================================================
 
 -- ------------------------------------------------------------
@@ -196,6 +202,14 @@ begin
   return v_transfer;
 end;
 $$;
+
+-- Drop dulu versi lawas yang mungkin sudah ditimpa migrasi setelahnya
+-- (migrasi_bukti_penerimaan.sql, versi 3 parameter). Tanpa ini, kalau
+-- file ini dijalankan ulang SETELAH migrasi_bukti_penerimaan.sql,
+-- akan tercipta 2 fungsi konfirmasi_terima_transfer sekaligus di
+-- database (overload) -- salah satunya versi lama yang TIDAK
+-- mewajibkan foto bukti penerimaan.
+drop function if exists konfirmasi_terima_transfer(uuid, text, text);
 
 -- ------------------------------------------------------------
 -- 4. konfirmasi_terima_transfer() -- versi terbaru dari mutasi_detail.sql
@@ -448,6 +462,13 @@ begin
   return v_transfer;
 end;
 $$;
+
+-- Sama seperti di atas: drop dulu versi 6-parameter (dengan
+-- p_lampiran_urls) kalau sudah pernah dibuat oleh
+-- migrasi_bukti_opname.sql / migrasi_wajib_bukti_opname_selisih.sql --
+-- supaya file ini tidak menciptakan overload lama yang melewati
+-- validasi wajib-foto-kalau-ada-selisih.
+drop function if exists catat_stok_opname(uuid, uuid, integer, text, text, text[]);
 
 -- ------------------------------------------------------------
 -- 8. catat_stok_opname() -- versi terbaru dari stok_opname.sql
