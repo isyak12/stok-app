@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowDownToLine, ArrowUpFromLine, X } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, RotateCcw, X } from "lucide-react";
 import { TipeTransaksi } from "@/lib/types";
 import { useCabang, useStokPerCabang } from "@/lib/storage";
 import { pesanError } from "@/lib/error";
+import { useFormDraft } from "@/lib/useFormDraft";
 
 type Props = {
   produkId: string;
@@ -33,6 +34,28 @@ function keDatetimeLocal(d: Date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
     d.getHours(),
   )}:${pad(d.getMinutes())}`;
+}
+
+// Field draft yang disimpan ke localStorage. Sengaja TIDAK menyertakan
+// `lampiran` -- File tidak bisa diserialize ke JSON, jadi bukti tetap
+// harus dipilih ulang manual setelah draft dipulihkan.
+type DraftTransaksi = {
+  jumlah: number | "";
+  catatan: string;
+  pihak: string;
+  noReferensi: string;
+  dibuatPada: string;
+};
+
+function draftKosong(d: DraftTransaksi) {
+  return !d.jumlah && !d.catatan.trim() && !d.pihak.trim() && !d.noReferensi.trim();
+}
+
+function formatWaktuSingkat(ts: number) {
+  return new Date(ts).toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function TransaksiStokForm({
@@ -93,8 +116,18 @@ export default function TransaksiStokForm({
       </label>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <KartuTransaksi tipe="masuk" cabangId={cabangId} onCatat={onCatat} />
-        <KartuTransaksi tipe="keluar" cabangId={cabangId} onCatat={onCatat} />
+        <KartuTransaksi
+          tipe="masuk"
+          produkId={produkId}
+          cabangId={cabangId}
+          onCatat={onCatat}
+        />
+        <KartuTransaksi
+          tipe="keluar"
+          produkId={produkId}
+          cabangId={cabangId}
+          onCatat={onCatat}
+        />
       </div>
     </div>
   );
@@ -102,10 +135,12 @@ export default function TransaksiStokForm({
 
 function KartuTransaksi({
   tipe,
+  produkId,
   cabangId,
   onCatat,
 }: {
   tipe: TipeTransaksi;
+  produkId: string;
   cabangId: string;
   onCatat: Props["onCatat"];
 }) {
@@ -125,6 +160,27 @@ function KartuTransaksi({
   const masuk = tipe === "masuk";
   const warna = masuk ? "moss" : "rust";
   const Icon = masuk ? ArrowDownToLine : ArrowUpFromLine;
+
+  // Draft/simpan sementara: kalau staf lagi isi transaksi panjang lalu
+  // koneksi putus atau salah pencet balik, isian tidak hilang -- otomatis
+  // tersimpan di localStorage browser dan bisa dipulihkan lain kali.
+  const draftKey = `draft-transaksi-${tipe}-${produkId}`;
+  const { draft, draftDitemukan, bersihkan, abaikanTawaran, lastSavedAt } =
+    useFormDraft<DraftTransaksi>(
+      draftKey,
+      { jumlah, catatan, pihak, noReferensi, dibuatPada },
+      { isEmpty: draftKosong },
+    );
+
+  function pulihkanDraft() {
+    if (!draft) return;
+    setJumlah(draft.data.jumlah);
+    setCatatan(draft.data.catatan);
+    setPihak(draft.data.pihak);
+    setNoReferensi(draft.data.noReferensi);
+    if (draft.data.dibuatPada) setDibuatPada(draft.data.dibuatPada);
+    abaikanTawaran();
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -177,6 +233,7 @@ function KartuTransaksi({
       setNoReferensi("");
       setLampiran([]);
       setDibuatPada(keDatetimeLocal(new Date()));
+      bersihkan();
     } catch (err) {
       setError(
         pesanError(
@@ -206,6 +263,34 @@ function KartuTransaksi({
           Stok {masuk ? "Masuk" : "Keluar"}
         </h2>
       </div>
+
+      {draftDitemukan && draft && (
+        <div className="mb-4 px-4 py-3 bg-ink/5 border border-ink/10 text-sm rounded-sm flex items-start gap-3">
+          <RotateCcw size={15} className="shrink-0 mt-0.5 text-ink/50" />
+          <div className="flex-1">
+            <p className="text-ink/80">
+              Ada draft belum tersimpan dari{" "}
+              {formatWaktuSingkat(draft.savedAt)}. Lanjutkan isian itu?
+            </p>
+            <div className="flex gap-3 mt-2">
+              <button
+                type="button"
+                onClick={pulihkanDraft}
+                className="text-xs font-medium text-ink underline underline-offset-2"
+              >
+                Pulihkan draft
+              </button>
+              <button
+                type="button"
+                onClick={bersihkan}
+                className="text-xs font-medium text-ink/50 underline underline-offset-2"
+              >
+                Buang
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 px-4 py-3 bg-rust/10 border border-rust/30 text-rust text-sm rounded-sm">
@@ -366,6 +451,13 @@ function KartuTransaksi({
           ? "Menyimpan..."
           : `Catat Stok ${masuk ? "Masuk" : "Keluar"}`}
       </button>
+
+      {lastSavedAt && (
+        <p className="text-[11px] text-ink/35 text-center mt-2">
+          Draft tersimpan otomatis pukul {formatWaktuSingkat(lastSavedAt)}
+          {lampiran.length > 0 ? " (bukti tidak ikut tersimpan)" : ""}
+        </p>
+      )}
     </form>
   );
 }

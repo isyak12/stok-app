@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowRightLeft } from "lucide-react";
+import { ArrowRightLeft, RotateCcw } from "lucide-react";
 import { useCabang } from "@/lib/storage";
 import { pesanError } from "@/lib/error";
+import { useFormDraft } from "@/lib/useFormDraft";
 
 type Props = {
+  produkId: string;
   cabangDefaultId?: string;
   onCatat: (
     dariCabangId: string,
@@ -22,7 +24,32 @@ type Props = {
 // dengan batas foto bukti penerimaan di TransferStokTable.
 const MAKS_UKURAN_FOTO_MB = 5;
 
-export default function TransferStokForm({ cabangDefaultId, onCatat }: Props) {
+// Field draft yang disimpan ke localStorage. Sengaja TIDAK menyertakan
+// `fotoBukti` -- File tidak bisa diserialize ke JSON, jadi foto bukti
+// tetap harus dipilih ulang manual setelah draft dipulihkan.
+type DraftTransfer = {
+  dariCabangId: string;
+  keCabangId: string;
+  jumlah: number | "";
+  catatan: string;
+};
+
+function draftKosong(d: DraftTransfer) {
+  return !d.keCabangId && !d.jumlah && !d.catatan.trim();
+}
+
+function formatWaktuSingkat(ts: number) {
+  return new Date(ts).toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export default function TransferStokForm({
+  produkId,
+  cabangDefaultId,
+  onCatat,
+}: Props) {
   const {
     data: daftarCabang,
     siap: cabangSiap,
@@ -38,6 +65,25 @@ export default function TransferStokForm({ cabangDefaultId, onCatat }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const cabangTujuanList = daftarCabang.filter((c) => c.id !== dariCabangId);
+
+  // Draft/simpan sementara per barang, supaya isian transfer tidak
+  // hilang kalau koneksi putus atau salah pencet balik sebelum submit.
+  const draftKey = `draft-transfer-${produkId}`;
+  const { draft, draftDitemukan, bersihkan, abaikanTawaran, lastSavedAt } =
+    useFormDraft<DraftTransfer>(
+      draftKey,
+      { dariCabangId, keCabangId, jumlah, catatan },
+      { isEmpty: draftKosong },
+    );
+
+  function pulihkanDraft() {
+    if (!draft) return;
+    if (draft.data.dariCabangId) setDariCabangId(draft.data.dariCabangId);
+    setKeCabangId(draft.data.keCabangId);
+    setJumlah(draft.data.jumlah);
+    setCatatan(draft.data.catatan);
+    abaikanTawaran();
+  }
 
   // Bersihkan object URL preview saat komponen unmount, supaya tidak
   // bocor memori kalau user pindah halaman dengan preview masih ada.
@@ -98,6 +144,7 @@ export default function TransferStokForm({ cabangDefaultId, onCatat }: Props) {
       setJumlah("");
       setCatatan("");
       pilihFoto(null);
+      bersihkan();
     } catch (err) {
       setError(pesanError(err, "Gagal mencatat transfer stok. Coba lagi."));
     } finally {
@@ -116,6 +163,34 @@ export default function TransferStokForm({ cabangDefaultId, onCatat }: Props) {
         </span>
         <h2 className="font-display text-lg font-semibold">Transfer Stok Antar Cabang</h2>
       </div>
+
+      {draftDitemukan && draft && (
+        <div className="mb-4 px-4 py-3 bg-ink/5 border border-ink/10 text-sm rounded-sm flex items-start gap-3">
+          <RotateCcw size={15} className="shrink-0 mt-0.5 text-ink/50" />
+          <div className="flex-1">
+            <p className="text-ink/80">
+              Ada draft belum tersimpan dari{" "}
+              {formatWaktuSingkat(draft.savedAt)}. Lanjutkan isian itu?
+            </p>
+            <div className="flex gap-3 mt-2">
+              <button
+                type="button"
+                onClick={pulihkanDraft}
+                className="text-xs font-medium text-ink underline underline-offset-2"
+              >
+                Pulihkan draft
+              </button>
+              <button
+                type="button"
+                onClick={bersihkan}
+                className="text-xs font-medium text-ink/50 underline underline-offset-2"
+              >
+                Buang
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 px-4 py-3 bg-rust/10 border border-rust/30 text-rust text-sm rounded-sm">
@@ -239,6 +314,13 @@ export default function TransferStokForm({ cabangDefaultId, onCatat }: Props) {
       >
         {menyimpan ? "Memproses..." : "Transfer Stok"}
       </button>
+
+      {lastSavedAt && (
+        <p className="text-[11px] text-ink/35 mt-2">
+          Draft tersimpan otomatis pukul {formatWaktuSingkat(lastSavedAt)}
+          {fotoBukti ? " (foto tidak ikut tersimpan)" : ""}
+        </p>
+      )}
     </form>
   );
 }

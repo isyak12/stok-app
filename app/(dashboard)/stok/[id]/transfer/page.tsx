@@ -62,7 +62,11 @@ export default function TransferStokPage() {
             Kembali ke "{barang.nama}"
           </Link>
 
-          <TransferStokForm cabangDefaultId={barang.cabangId} onCatat={catat} />
+          <TransferStokForm
+            produkId={barang.id}
+            cabangDefaultId={barang.cabangId}
+            onCatat={catat}
+          />
 
           <div>
             <h2 className="font-display text-lg font-semibold mb-3">

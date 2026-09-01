@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ClipboardCheck, ImagePlus, X } from "lucide-react";
+import { ClipboardCheck, ImagePlus, RotateCcw, X } from "lucide-react";
 import { AlasanOpname, Barang } from "@/lib/types";
 import { useCabang } from "@/lib/storage";
 import { pesanError } from "@/lib/error";
+import { useFormDraft } from "@/lib/useFormDraft";
 
 const LABEL_ALASAN: Record<AlasanOpname, string> = {
   rusak: "Barang rusak",
@@ -12,6 +13,26 @@ const LABEL_ALASAN: Record<AlasanOpname, string> = {
   salah_catat: "Salah catat sebelumnya",
   lainnya: "Lainnya",
 };
+
+// Field draft yang disimpan ke localStorage. Sengaja TIDAK menyertakan
+// `foto` -- File tidak bisa diserialize ke JSON, jadi foto bukti tetap
+// harus dipilih ulang manual setelah draft dipulihkan.
+type DraftOpname = {
+  stokFisik: number | "";
+  alasan: AlasanOpname | "";
+  catatan: string;
+};
+
+function draftKosong(d: DraftOpname) {
+  return !d.stokFisik && !d.alasan && !d.catatan.trim();
+}
+
+function formatWaktuSingkat(ts: number) {
+  return new Date(ts).toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 // Batas ukuran & jumlah foto, dijaga di sisi client supaya user dapat
 // pesan error yang jelas sebelum upload dicoba (sama pola dengan
@@ -50,6 +71,25 @@ export default function StokOpnameForm({ barang, onCatat }: Props) {
   useEffect(() => {
     setCabangId(barang.cabangId);
   }, [barang.cabangId]);
+
+  // Draft/simpan sementara per barang, supaya hasil hitung fisik yang
+  // sedang diketik tidak hilang kalau koneksi putus atau salah pencet
+  // balik sebelum sempat submit.
+  const draftKey = `draft-opname-${barang.id}`;
+  const { draft, draftDitemukan, bersihkan, abaikanTawaran, lastSavedAt } =
+    useFormDraft<DraftOpname>(
+      draftKey,
+      { stokFisik, alasan, catatan },
+      { isEmpty: draftKosong },
+    );
+
+  function pulihkanDraft() {
+    if (!draft) return;
+    setStokFisik(draft.data.stokFisik);
+    setAlasan(draft.data.alasan);
+    setCatatan(draft.data.catatan);
+    abaikanTawaran();
+  }
 
   // Bersihkan semua object URL preview saat komponen unmount (mis.
   // user pindah halaman sebelum submit) -- tanpa ini, blob URL yang
@@ -160,6 +200,7 @@ export default function StokOpnameForm({ barang, onCatat }: Props) {
       setAlasan("");
       setCatatan("");
       resetFoto();
+      bersihkan();
     } catch (err) {
       setError(pesanError(err, "Gagal mencatat stok opname."));
     } finally {
@@ -180,6 +221,34 @@ export default function StokOpnameForm({ barang, onCatat }: Props) {
           Catat Hasil Hitung Fisik
         </h2>
       </div>
+
+      {draftDitemukan && draft && (
+        <div className="mb-4 px-4 py-3 bg-ink/5 border border-ink/10 text-sm rounded-sm flex items-start gap-3">
+          <RotateCcw size={15} className="shrink-0 mt-0.5 text-ink/50" />
+          <div className="flex-1">
+            <p className="text-ink/80">
+              Ada draft belum tersimpan dari{" "}
+              {formatWaktuSingkat(draft.savedAt)}. Lanjutkan isian itu?
+            </p>
+            <div className="flex gap-3 mt-2">
+              <button
+                type="button"
+                onClick={pulihkanDraft}
+                className="text-xs font-medium text-ink underline underline-offset-2"
+              >
+                Pulihkan draft
+              </button>
+              <button
+                type="button"
+                onClick={bersihkan}
+                className="text-xs font-medium text-ink/50 underline underline-offset-2"
+              >
+                Buang
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 px-4 py-3 bg-rust/10 border border-rust/30 text-rust text-sm rounded-sm">
@@ -357,6 +426,13 @@ export default function StokOpnameForm({ barang, onCatat }: Props) {
       >
         {menyimpan ? "Menyimpan..." : "Catat Hasil Opname"}
       </button>
+
+      {lastSavedAt && (
+        <p className="text-[11px] text-ink/35 text-center mt-2">
+          Draft tersimpan otomatis pukul {formatWaktuSingkat(lastSavedAt)}
+          {foto.length > 0 ? " (foto tidak ikut tersimpan)" : ""}
+        </p>
+      )}
     </form>
   );
 }
