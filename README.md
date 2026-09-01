@@ -37,6 +37,9 @@ Aplikasi manajemen stok barang berbasis Next.js (App Router), TypeScript, dan Ta
 ### Log Aktivitas Barang
 - Jejak audit otomatis (lewat trigger database) untuk barang ditambahkan, stok berkurang, dan barang dihapus — mencatat siapa, kapan, produk/cabang mana, dan jumlahnya. Hanya bisa diakses admin/superadmin.
 
+### Kenyamanan Form
+- Form Transaksi Stok, Transfer Stok, dan Stok Opname otomatis menyimpan draft isian ke penyimpanan lokal perangkat selagi diketik — kalau koneksi putus atau tab tertutup tidak sengaja, isian bisa dipulihkan saat form dibuka lagi.
+
 ### Login & Peran Pengguna
 - Login berbasis username + kata sandi (memakai Supabase Auth di baliknya; username diterjemahkan ke email internal). Tidak ada halaman daftar akun sendiri.
 - Tiga peran berjenjang:
@@ -158,6 +161,11 @@ lib/
   role.ts                 → Peran (superadmin/admin/staf) & helper hak akses
   username.ts             → Konversi username <-> email internal
   lampiran-upload.ts      → Upload lampiran ke Supabase Storage (dengan rollback)
+  error.ts                 → pesanError() — ekstrak pesan error yang aman ditampilkan ke user,
+                              termasuk error dari Supabase (bukan instance Error bawaan JS)
+  useFormDraft.ts          → Hook auto-save draft form (localStorage) supaya isian panjang di
+                              form Transaksi/Transfer/Opname tidak hilang saat koneksi putus
+                              atau tab tertutup tidak sengaja
   useUser.ts               → Hook data user & peran yang sedang login
   storage.ts               → Semua hook data: useStok, useCabang, useTransaksiStok,
                               useTransferStok, useStokOpname, useRiwayatMutasi,
