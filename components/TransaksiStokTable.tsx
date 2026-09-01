@@ -108,7 +108,7 @@ export default function TransaksiStokTable({
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Cari pihak, no. referensi, catatan, atau cabang..."
-              className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
+              className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
             />
           </div>
           <select
@@ -116,7 +116,7 @@ export default function TransaksiStokTable({
             onChange={(e) =>
               setTipeFilter(e.target.value as "semua" | "masuk" | "keluar")
             }
-            className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
+            className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
           >
             <option value="semua">Semua Tipe</option>
             <option value="masuk">Masuk</option>
@@ -126,7 +126,7 @@ export default function TransaksiStokTable({
             <select
               value={cabangFilter}
               onChange={(e) => setCabangFilter(e.target.value)}
-              className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
+              className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
             >
               <option value="semua">Semua Cabang</option>
               {daftarCabang.map((c) => (

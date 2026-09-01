@@ -197,7 +197,7 @@ export default function TransferStokTable({
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Cari catatan, dikirim/diterima oleh, atau cabang..."
-              className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
+              className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
             />
           </div>
           <select
@@ -205,7 +205,7 @@ export default function TransferStokTable({
             onChange={(e) =>
               setStatusFilter(e.target.value as StatusTransfer | "semua")
             }
-            className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
+            className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
           >
             <option value="semua">Semua Status</option>
             <option value="terkirim">Terkirim</option>
@@ -216,7 +216,7 @@ export default function TransferStokTable({
             <select
               value={cabangFilter}
               onChange={(e) => setCabangFilter(e.target.value)}
-              className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
+              className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
             >
               <option value="semua">Semua Cabang</option>
               {daftarCabang.map((c) => (

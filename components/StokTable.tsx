@@ -98,13 +98,13 @@ export default function StokTable({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Cari nama, SKU, kategori, atau lokasi rak..."
-            className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
+            className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
           />
         </div>
         <select
           value={kategori}
           onChange={(e) => setKategori(e.target.value)}
-          className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
+          className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
         >
           {kategoriList.map((k) => (
             <option key={k} value={k}>

@@ -1,0 +1,175 @@
+diff --git a/app/(dashboard)/pengguna/page.tsx b/app/(dashboard)/pengguna/page.tsx
+index de7c3e9..c093287 100644
+--- a/app/(dashboard)/pengguna/page.tsx
++++ b/app/(dashboard)/pengguna/page.tsx
+@@ -223,7 +223,7 @@ export default function KelolaPenggunaPage() {
+               required
+               minLength={3}
+               placeholder="mis. budi"
+-              className="w-full border border-ink/15 rounded-sm px-3 py-2 text-sm"
++              className="w-full border border-ink/15 rounded-sm px-3 py-2 text-base sm:text-sm"
+             />
+           </label>
+           <label className="text-sm">
+@@ -235,7 +235,7 @@ export default function KelolaPenggunaPage() {
+               required
+               minLength={6}
+               placeholder="min. 6 karakter"
+-              className="w-full border border-ink/15 rounded-sm px-3 py-2 text-sm"
++              className="w-full border border-ink/15 rounded-sm px-3 py-2 text-base sm:text-sm"
+             />
+           </label>
+           <label className="text-sm">
+@@ -243,7 +243,7 @@ export default function KelolaPenggunaPage() {
+             <select
+               value={peranBaru}
+               onChange={(e) => setPeranBaru(e.target.value as "admin" | "staf")}
+-              className="w-full border border-ink/15 rounded-sm px-3 py-2 text-sm bg-white"
++              className="w-full border border-ink/15 rounded-sm px-3 py-2 text-base sm:text-sm bg-white"
+             >
+               <option value="staf">Staf Gudang</option>
+               <option value="admin">Admin</option>
+@@ -364,7 +364,7 @@ export default function KelolaPenggunaPage() {
+                             minLength={6}
+                             placeholder="min. 6 karakter"
+                             autoFocus
+-                            className="w-full border border-ink/15 rounded-sm px-3 py-2 text-sm"
++                            className="w-full border border-ink/15 rounded-sm px-3 py-2 text-base sm:text-sm"
+                           />
+                         </label>
+                         {errorReset && (
+diff --git a/app/globals.css b/app/globals.css
+index 995468b..9c70dcf 100644
+--- a/app/globals.css
++++ b/app/globals.css
+@@ -34,5 +34,5 @@ body {
+ }
+ 
+ .input {
+-  @apply w-full px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust;
++  @apply w-full px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust;
+ }
+diff --git a/components/StokOpnameTable.tsx b/components/StokOpnameTable.tsx
+index 9857e84..9dab9c0 100644
+--- a/components/StokOpnameTable.tsx
++++ b/components/StokOpnameTable.tsx
+@@ -74,13 +74,13 @@ export default function StokOpnameTable({ data, daftarCabang }: Props) {
+               value={q}
+               onChange={(e) => setQ(e.target.value)}
+               placeholder="Cari alasan, catatan, dicatat oleh, atau cabang..."
+-              className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
++              className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
+             />
+           </div>
+           <select
+             value={selisihFilter}
+             onChange={(e) => setSelisihFilter(e.target.value as FilterSelisih)}
+-            className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
++            className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
+           >
+             <option value="semua">Semua Selisih</option>
+             <option value="cocok">Cocok</option>
+@@ -91,7 +91,7 @@ export default function StokOpnameTable({ data, daftarCabang }: Props) {
+             <select
+               value={cabangFilter}
+               onChange={(e) => setCabangFilter(e.target.value)}
+-              className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
++              className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
+             >
+               <option value="semua">Semua Cabang</option>
+               {daftarCabang.map((c) => (
+diff --git a/components/StokTable.tsx b/components/StokTable.tsx
+index 945ee81..8abc375 100644
+--- a/components/StokTable.tsx
++++ b/components/StokTable.tsx
+@@ -98,13 +98,13 @@ export default function StokTable({
+             value={q}
+             onChange={(e) => setQ(e.target.value)}
+             placeholder="Cari nama, SKU, kategori, atau lokasi rak..."
+-            className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
++            className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
+           />
+         </div>
+         <select
+           value={kategori}
+           onChange={(e) => setKategori(e.target.value)}
+-          className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
++          className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
+         >
+           {kategoriList.map((k) => (
+             <option key={k} value={k}>
+diff --git a/components/TransaksiStokTable.tsx b/components/TransaksiStokTable.tsx
+index 789790a..22acbe4 100644
+--- a/components/TransaksiStokTable.tsx
++++ b/components/TransaksiStokTable.tsx
+@@ -108,7 +108,7 @@ export default function TransaksiStokTable({
+               value={q}
+               onChange={(e) => setQ(e.target.value)}
+               placeholder="Cari pihak, no. referensi, catatan, atau cabang..."
+-              className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
++              className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
+             />
+           </div>
+           <select
+@@ -116,7 +116,7 @@ export default function TransaksiStokTable({
+             onChange={(e) =>
+               setTipeFilter(e.target.value as "semua" | "masuk" | "keluar")
+             }
+-            className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
++            className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
+           >
+             <option value="semua">Semua Tipe</option>
+             <option value="masuk">Masuk</option>
+@@ -126,7 +126,7 @@ export default function TransaksiStokTable({
+             <select
+               value={cabangFilter}
+               onChange={(e) => setCabangFilter(e.target.value)}
+-              className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
++              className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
+             >
+               <option value="semua">Semua Cabang</option>
+               {daftarCabang.map((c) => (
+diff --git a/components/TransferStokTable.tsx b/components/TransferStokTable.tsx
+index 6c54ccb..3b89788 100644
+--- a/components/TransferStokTable.tsx
++++ b/components/TransferStokTable.tsx
+@@ -197,7 +197,7 @@ export default function TransferStokTable({
+               value={q}
+               onChange={(e) => setQ(e.target.value)}
+               placeholder="Cari catatan, dikirim/diterima oleh, atau cabang..."
+-              className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
++              className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
+             />
+           </div>
+           <select
+@@ -205,7 +205,7 @@ export default function TransferStokTable({
+             onChange={(e) =>
+               setStatusFilter(e.target.value as StatusTransfer | "semua")
+             }
+-            className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
++            className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
+           >
+             <option value="semua">Semua Status</option>
+             <option value="terkirim">Terkirim</option>
+@@ -216,7 +216,7 @@ export default function TransferStokTable({
+             <select
+               value={cabangFilter}
+               onChange={(e) => setCabangFilter(e.target.value)}
+-              className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
++              className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
+             >
+               <option value="semua">Semua Cabang</option>
+               {daftarCabang.map((c) => (
+diff --git a/components/UbahPasswordForm.tsx b/components/UbahPasswordForm.tsx
+index 3a62eb3..64d67e8 100644
+--- a/components/UbahPasswordForm.tsx
++++ b/components/UbahPasswordForm.tsx
+@@ -55,7 +55,7 @@ function InputPassword({
+           id={id}
+           type={tampil ? "text" : "password"}
+           autoComplete={autoComplete}
+-          className="w-full rounded-sm border border-ink/15 bg-paper px-3.5 py-2.5 pr-11 text-sm text-ink placeholder:text-ink/30 transition focus:border-rust focus:outline-none focus:ring-1 focus:ring-rust"
++          className="w-full rounded-sm border border-ink/15 bg-paper px-3.5 py-2.5 pr-11 text-base sm:text-sm text-ink placeholder:text-ink/30 transition focus:border-rust focus:outline-none focus:ring-1 focus:ring-rust"
+           value={value}
+           onChange={(e) => onChange(e.target.value)}
+           required

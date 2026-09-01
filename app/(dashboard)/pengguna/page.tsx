@@ -223,7 +223,7 @@ export default function KelolaPenggunaPage() {
               required
               minLength={3}
               placeholder="mis. budi"
-              className="w-full border border-ink/15 rounded-sm px-3 py-2 text-sm"
+              className="w-full border border-ink/15 rounded-sm px-3 py-2 text-base sm:text-sm"
             />
           </label>
           <label className="text-sm">
@@ -235,7 +235,7 @@ export default function KelolaPenggunaPage() {
               required
               minLength={6}
               placeholder="min. 6 karakter"
-              className="w-full border border-ink/15 rounded-sm px-3 py-2 text-sm"
+              className="w-full border border-ink/15 rounded-sm px-3 py-2 text-base sm:text-sm"
             />
           </label>
           <label className="text-sm">
@@ -243,7 +243,7 @@ export default function KelolaPenggunaPage() {
             <select
               value={peranBaru}
               onChange={(e) => setPeranBaru(e.target.value as "admin" | "staf")}
-              className="w-full border border-ink/15 rounded-sm px-3 py-2 text-sm bg-white"
+              className="w-full border border-ink/15 rounded-sm px-3 py-2 text-base sm:text-sm bg-white"
             >
               <option value="staf">Staf Gudang</option>
               <option value="admin">Admin</option>
@@ -364,7 +364,7 @@ export default function KelolaPenggunaPage() {
                             minLength={6}
                             placeholder="min. 6 karakter"
                             autoFocus
-                            className="w-full border border-ink/15 rounded-sm px-3 py-2 text-sm"
+                            className="w-full border border-ink/15 rounded-sm px-3 py-2 text-base sm:text-sm"
                           />
                         </label>
                         {errorReset && (

@@ -74,13 +74,13 @@ export default function StokOpnameTable({ data, daftarCabang }: Props) {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Cari alasan, catatan, dicatat oleh, atau cabang..."
-              className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
+              className="w-full pl-9 pr-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
             />
           </div>
           <select
             value={selisihFilter}
             onChange={(e) => setSelisihFilter(e.target.value as FilterSelisih)}
-            className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
+            className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
           >
             <option value="semua">Semua Selisih</option>
             <option value="cocok">Cocok</option>
@@ -91,7 +91,7 @@ export default function StokOpnameTable({ data, daftarCabang }: Props) {
             <select
               value={cabangFilter}
               onChange={(e) => setCabangFilter(e.target.value)}
-              className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-sm focus:outline-none focus:border-rust"
+              className="px-3 py-2.5 bg-white border border-ink/15 rounded-sm text-base sm:text-sm focus:outline-none focus:border-rust"
             >
               <option value="semua">Semua Cabang</option>
               {daftarCabang.map((c) => (

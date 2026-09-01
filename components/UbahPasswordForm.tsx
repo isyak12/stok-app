@@ -55,7 +55,7 @@ function InputPassword({
           id={id}
           type={tampil ? "text" : "password"}
           autoComplete={autoComplete}
-          className="w-full rounded-sm border border-ink/15 bg-paper px-3.5 py-2.5 pr-11 text-sm text-ink placeholder:text-ink/30 transition focus:border-rust focus:outline-none focus:ring-1 focus:ring-rust"
+          className="w-full rounded-sm border border-ink/15 bg-paper px-3.5 py-2.5 pr-11 text-base sm:text-sm text-ink placeholder:text-ink/30 transition focus:border-rust focus:outline-none focus:ring-1 focus:ring-rust"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           required
