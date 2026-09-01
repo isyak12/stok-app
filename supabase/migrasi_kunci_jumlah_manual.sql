@@ -55,6 +55,26 @@
 -- selama tabel/kolom terkait (bukti_foto_url_kirim, bukti_foto_url,
 -- stok_opname_lampiran, dst.) sudah ada -- karena isinya sudah versi
 -- final, bukan versi transisi.
+--
+-- PENGECUALIAN (ditemukan & ditandai 2026-09): klaim "aman dijalankan
+-- ulang kapan saja" di atas TIDAK berlaku untuk catat_transaksi_stok()
+-- (fungsi #2 di bawah, 7 parameter -- tanpa p_dibuat_pada, tanpa
+-- p_lampiran_urls). Fungsi itu TIDAK punya `drop function` sebelum
+-- `create or replace`-nya, jadi kalau file ini dijalankan ulang pada
+-- database yang SUDAH menjalankan migrasi_tanggal_manual_transaksi.sql
+-- dan/atau migrasi_bukti_transaksi_stok.sql (yang menambah parameter,
+-- bukan sekadar menimpa), menjalankan ulang file ini akan MEMBUAT LAGI
+-- overload 7-parameter yang sudah usang berdampingan dengan versi
+-- final 9-parameter -- persis kelas bug yang sama yang ditambal di
+-- fungsi-fungsi lain di file ini. Perbaikan penuh untuk hal ini
+-- sudah ditambahkan sebagai `drop function` eksplisit di
+-- migrasi_bukti_transaksi_stok.sql (dijalankan setelah file ini),
+-- jadi untuk SETUP DARI NOL urutan tetap aman -- tapi kalau butuh
+-- me-REPLAY migrasi_kunci_jumlah_manual.sql SENDIRIAN di database
+-- yang sudah berjalan, jalankan juga ulang migrasi_bukti_transaksi_
+-- stok.sql setelahnya (atau jalankan manual:
+--   drop function if exists catat_transaksi_stok(uuid, uuid, text, integer, text, text, text);
+-- ) supaya overload 7-parameter tidak nyangkut lagi.
 -- ============================================================
 
 -- ------------------------------------------------------------

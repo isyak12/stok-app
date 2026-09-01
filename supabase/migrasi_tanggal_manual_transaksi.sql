@@ -21,9 +21,25 @@
 --     field pihak/catatan/no_referensi yang sudah ada.
 -- ============================================================
 
--- Signature TIDAK menghapus parameter lama, cuma menambah 1 di
--- akhir (semuanya sudah punya default sebelumnya) -- jadi cukup
--- `create or replace`, tidak perlu `drop function` dulu.
+-- KOREKSI (2026-09): komentar sebelumnya di sini SALAH -- menambah
+-- parameter baru (p_dibuat_pada) TETAP mengubah signature/arity
+-- fungsi walau parameternya punya default, jadi `create or replace`
+-- TIDAK menimpa versi 7-parameter dari migrasi_kunci_jumlah_manual.sql
+-- -- yang terjadi adalah Postgres membuat OVERLOAD baru 8-parameter,
+-- dan versi 7-parameter lama tetap hidup berdampingan di database
+-- (persis pola bug overload yang sebelumnya ditemukan pada
+-- catat_transfer_stok / konfirmasi_terima_transfer / catat_stok_opname).
+-- Migrasi ini SENGAJA dibiarkan tanpa drop di sini (supaya urutan
+-- historisnya tetap sama seperti saat pertama dijalankan), TAPI
+-- migrasi_bukti_transaksi_stok.sql (langkah berikutnya) sekarang
+-- sudah men-drop versi 7-parameter ini secara eksplisit sebelum
+-- membuat versi final 9-parameter -- jadi urutan lengkap
+-- (migrasi_kunci_jumlah_manual.sql -> file ini -> migrasi_bukti_
+-- transaksi_stok.sql) tetap aman SELAMA ketiganya dijalankan
+-- berurutan sampai akhir. Kalau proses migrasi berhenti di tengah
+-- persis setelah file ini (tidak lanjut ke migrasi_bukti_transaksi_
+-- stok.sql), overload 7-parameter akan tetap ada di database sampai
+-- file berikutnya benar-benar dijalankan.
 create or replace function catat_transaksi_stok(
   p_produk_id uuid,
   p_cabang_id uuid,

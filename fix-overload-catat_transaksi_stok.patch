@@ -1,0 +1,125 @@
+diff --git a/README.md b/README.md
+index 0ab74c1..cf88147 100644
+--- a/README.md
++++ b/README.md
+@@ -37,6 +37,9 @@ Aplikasi manajemen stok barang berbasis Next.js (App Router), TypeScript, dan Ta
+ ### Log Aktivitas Barang
+ - Jejak audit otomatis (lewat trigger database) untuk barang ditambahkan, stok berkurang, dan barang dihapus — mencatat siapa, kapan, produk/cabang mana, dan jumlahnya. Hanya bisa diakses admin/superadmin.
+ 
++### Kenyamanan Form
++- Form Transaksi Stok, Transfer Stok, dan Stok Opname otomatis menyimpan draft isian ke penyimpanan lokal perangkat selagi diketik — kalau koneksi putus atau tab tertutup tidak sengaja, isian bisa dipulihkan saat form dibuka lagi.
++
+ ### Login & Peran Pengguna
+ - Login berbasis username + kata sandi (memakai Supabase Auth di baliknya; username diterjemahkan ke email internal). Tidak ada halaman daftar akun sendiri.
+ - Tiga peran berjenjang:
+@@ -78,6 +81,8 @@ Disimpan di **Supabase** (PostgreSQL) lewat beberapa tabel utama: `produk` (data
+    File `fix_*.sql` adalah perbaikan yang sudah digabung ke migrasi terkait — jalankan untuk kelengkapan histori, tidak wajib dipisah.
+ 
+    > **Kenapa urutan ini penting?** Setiap file `.sql` di atas punya komentar header yang menyatakan prasyaratnya sendiri (mis. "SETELAH mutasi_detail.sql"). Urutan di atas disusun mengikuti prasyarat tersebut secara konsisten. Untuk **setup database baru dari nol**, tetap ikuti urutan ini. Untuk database yang **sudah berjalan**: `migrasi_kunci_jumlah_manual.sql` (langkah 12) sekarang aman dijalankan ulang kapan saja tanpa memandang urutan terhadap langkah 16–18, jadi kalau butuh me-replay migrasi di database yang sudah ada, tidak perlu lagi khawatir soal urutan spesifik untuk file itu — cukup pastikan file lain tetap mengikuti prasyaratnya masing-masing.
++   >
++   > **Pengecualian (2026-09):** klaim "aman dijalankan ulang kapan saja" untuk langkah 12 **tidak berlaku untuk fungsi `catat_transaksi_stok()`**. Kalau perlu me-replay `migrasi_kunci_jumlah_manual.sql` sendirian di database yang sudah berjalan (bukan setup dari nol), jalankan juga ulang `migrasi_bukti_transaksi_stok.sql` (langkah 14) setelahnya — file itu sudah men-drop versi lama fungsi ini secara eksplisit untuk mencegah overload. Detail lengkap ada di komentar dalam `migrasi_kunci_jumlah_manual.sql`.
+ 
+ 3. (Opsional) Jalankan `supabase/seed.sql` dan `supabase/seed_mutasi.sql` untuk mengisi data contoh, biar Dasbor & Daftar Stok langsung terisi.
+ 
+@@ -158,6 +163,11 @@ lib/
+   role.ts                 → Peran (superadmin/admin/staf) & helper hak akses
+   username.ts             → Konversi username <-> email internal
+   lampiran-upload.ts      → Upload lampiran ke Supabase Storage (dengan rollback)
++  error.ts                 → pesanError() — ekstrak pesan error yang aman ditampilkan ke user,
++                              termasuk error dari Supabase (bukan instance Error bawaan JS)
++  useFormDraft.ts          → Hook auto-save draft form (localStorage) supaya isian panjang di
++                              form Transaksi/Transfer/Opname tidak hilang saat koneksi putus
++                              atau tab tertutup tidak sengaja
+   useUser.ts               → Hook data user & peran yang sedang login
+   storage.ts               → Semua hook data: useStok, useCabang, useTransaksiStok,
+                               useTransferStok, useStokOpname, useRiwayatMutasi,
+diff --git a/supabase/migrasi_bukti_transaksi_stok.sql b/supabase/migrasi_bukti_transaksi_stok.sql
+index 2e079c0..98c420b 100644
+--- a/supabase/migrasi_bukti_transaksi_stok.sql
++++ b/supabase/migrasi_bukti_transaksi_stok.sql
+@@ -82,6 +82,21 @@ drop function if exists catat_transaksi_stok(
+   uuid, uuid, text, integer, text, text, text, timestamptz
+ );
+ 
++-- PENTING (ditambal 2026-09): drop juga versi 7-parameter dari
++-- migrasi_kunci_jumlah_manual.sql (uuid, uuid, text, integer, text,
++-- text, text -- tanpa p_dibuat_pada). File migrasi_tanggal_manual_
++-- transaksi.sql SEHARUSNYA sudah men-drop versi ini sebelum menambah
++-- parameter p_dibuat_pada, tapi tidak melakukannya (keliru mengira
++-- `create or replace` bisa menambah parameter tanpa drop -- padahal
++-- di Postgres, menambah parameter mengubah signature/arity, jadi
++-- `create or replace` membuat OVERLOAD baru, bukan menimpa). Akibatnya
++-- versi 7-parameter ini tetap nyangkut di database sampai titik ini
++-- kalau tidak di-drop eksplisit -- drop di sini menutup celah itu
++-- supaya tidak ada overload lama yang lolos validasi lampiran wajib.
++drop function if exists catat_transaksi_stok(
++  uuid, uuid, text, integer, text, text, text
++);
++
+ create or replace function catat_transaksi_stok(
+   p_produk_id uuid,
+   p_cabang_id uuid,
+diff --git a/supabase/migrasi_kunci_jumlah_manual.sql b/supabase/migrasi_kunci_jumlah_manual.sql
+index 4a698ce..38ca66a 100644
+--- a/supabase/migrasi_kunci_jumlah_manual.sql
++++ b/supabase/migrasi_kunci_jumlah_manual.sql
+@@ -55,6 +55,26 @@
+ -- selama tabel/kolom terkait (bukti_foto_url_kirim, bukti_foto_url,
+ -- stok_opname_lampiran, dst.) sudah ada -- karena isinya sudah versi
+ -- final, bukan versi transisi.
++--
++-- PENGECUALIAN (ditemukan & ditandai 2026-09): klaim "aman dijalankan
++-- ulang kapan saja" di atas TIDAK berlaku untuk catat_transaksi_stok()
++-- (fungsi #2 di bawah, 7 parameter -- tanpa p_dibuat_pada, tanpa
++-- p_lampiran_urls). Fungsi itu TIDAK punya `drop function` sebelum
++-- `create or replace`-nya, jadi kalau file ini dijalankan ulang pada
++-- database yang SUDAH menjalankan migrasi_tanggal_manual_transaksi.sql
++-- dan/atau migrasi_bukti_transaksi_stok.sql (yang menambah parameter,
++-- bukan sekadar menimpa), menjalankan ulang file ini akan MEMBUAT LAGI
++-- overload 7-parameter yang sudah usang berdampingan dengan versi
++-- final 9-parameter -- persis kelas bug yang sama yang ditambal di
++-- fungsi-fungsi lain di file ini. Perbaikan penuh untuk hal ini
++-- sudah ditambahkan sebagai `drop function` eksplisit di
++-- migrasi_bukti_transaksi_stok.sql (dijalankan setelah file ini),
++-- jadi untuk SETUP DARI NOL urutan tetap aman -- tapi kalau butuh
++-- me-REPLAY migrasi_kunci_jumlah_manual.sql SENDIRIAN di database
++-- yang sudah berjalan, jalankan juga ulang migrasi_bukti_transaksi_
++-- stok.sql setelahnya (atau jalankan manual:
++--   drop function if exists catat_transaksi_stok(uuid, uuid, text, integer, text, text, text);
++-- ) supaya overload 7-parameter tidak nyangkut lagi.
+ -- ============================================================
+ 
+ -- ------------------------------------------------------------
+diff --git a/supabase/migrasi_tanggal_manual_transaksi.sql b/supabase/migrasi_tanggal_manual_transaksi.sql
+index bb7260c..03fa3ef 100644
+--- a/supabase/migrasi_tanggal_manual_transaksi.sql
++++ b/supabase/migrasi_tanggal_manual_transaksi.sql
+@@ -21,9 +21,25 @@
+ --     field pihak/catatan/no_referensi yang sudah ada.
+ -- ============================================================
+ 
+--- Signature TIDAK menghapus parameter lama, cuma menambah 1 di
+--- akhir (semuanya sudah punya default sebelumnya) -- jadi cukup
+--- `create or replace`, tidak perlu `drop function` dulu.
++-- KOREKSI (2026-09): komentar sebelumnya di sini SALAH -- menambah
++-- parameter baru (p_dibuat_pada) TETAP mengubah signature/arity
++-- fungsi walau parameternya punya default, jadi `create or replace`
++-- TIDAK menimpa versi 7-parameter dari migrasi_kunci_jumlah_manual.sql
++-- -- yang terjadi adalah Postgres membuat OVERLOAD baru 8-parameter,
++-- dan versi 7-parameter lama tetap hidup berdampingan di database
++-- (persis pola bug overload yang sebelumnya ditemukan pada
++-- catat_transfer_stok / konfirmasi_terima_transfer / catat_stok_opname).
++-- Migrasi ini SENGAJA dibiarkan tanpa drop di sini (supaya urutan
++-- historisnya tetap sama seperti saat pertama dijalankan), TAPI
++-- migrasi_bukti_transaksi_stok.sql (langkah berikutnya) sekarang
++-- sudah men-drop versi 7-parameter ini secara eksplisit sebelum
++-- membuat versi final 9-parameter -- jadi urutan lengkap
++-- (migrasi_kunci_jumlah_manual.sql -> file ini -> migrasi_bukti_
++-- transaksi_stok.sql) tetap aman SELAMA ketiganya dijalankan
++-- berurutan sampai akhir. Kalau proses migrasi berhenti di tengah
++-- persis setelah file ini (tidak lanjut ke migrasi_bukti_transaksi_
++-- stok.sql), overload 7-parameter akan tetap ada di database sampai
++-- file berikutnya benar-benar dijalankan.
+ create or replace function catat_transaksi_stok(
+   p_produk_id uuid,
+   p_cabang_id uuid,

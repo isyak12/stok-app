@@ -82,6 +82,21 @@ drop function if exists catat_transaksi_stok(
   uuid, uuid, text, integer, text, text, text, timestamptz
 );
 
+-- PENTING (ditambal 2026-09): drop juga versi 7-parameter dari
+-- migrasi_kunci_jumlah_manual.sql (uuid, uuid, text, integer, text,
+-- text, text -- tanpa p_dibuat_pada). File migrasi_tanggal_manual_
+-- transaksi.sql SEHARUSNYA sudah men-drop versi ini sebelum menambah
+-- parameter p_dibuat_pada, tapi tidak melakukannya (keliru mengira
+-- `create or replace` bisa menambah parameter tanpa drop -- padahal
+-- di Postgres, menambah parameter mengubah signature/arity, jadi
+-- `create or replace` membuat OVERLOAD baru, bukan menimpa). Akibatnya
+-- versi 7-parameter ini tetap nyangkut di database sampai titik ini
+-- kalau tidak di-drop eksplisit -- drop di sini menutup celah itu
+-- supaya tidak ada overload lama yang lolos validasi lampiran wajib.
+drop function if exists catat_transaksi_stok(
+  uuid, uuid, text, integer, text, text, text
+);
+
 create or replace function catat_transaksi_stok(
   p_produk_id uuid,
   p_cabang_id uuid,
