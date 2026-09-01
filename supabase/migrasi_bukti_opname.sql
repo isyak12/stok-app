@@ -89,6 +89,10 @@ begin
         'Alasan wajib diisi kalau ada selisih antara stok fisik dan stok sistem';
     end if;
 
+    -- PENTING (bugfix, lihat juga migrasi_wajib_bukti_opname_selisih.sql):
+    -- flag ini wajib diset sebelum update stok.jumlah, kalau tidak
+    -- akan ditolak trigger dari migrasi_kunci_jumlah_manual.sql.
+    perform set_config('stokku.izinkan_ubah_jumlah', 'true', true);
     update stok
     set jumlah = p_stok_fisik
     where produk_id = p_produk_id

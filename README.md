@@ -53,25 +53,31 @@ Disimpan di **Supabase** (PostgreSQL) lewat beberapa tabel utama: `produk` (data
 
 1. Buat project baru di [supabase.com](https://supabase.com) (gratis).
 
-2. Buka **SQL Editor** di dashboard project, lalu jalankan file-file di `supabase/` secara berurutan (masing-masing membangun di atas yang sebelumnya):
-   - `schema.sql` — tabel `produk` dan `stok` + RLS awal.
-   - `role-policies.sql` — kebijakan akses berbasis peran admin/staf.
-   - `auth-policies.sql` — memperketat akses supaya hanya user login yang bisa membaca/mengubah data.
-   - `transaksi_stok.sql` — tabel `transaksi_stok` + trigger otomatis update stok.
-   - `migrasi_cabang.sql` — dukungan multi-cabang (tabel `cabang`, kolom `cabang_id` di `stok`).
-   - `migrasi_transaksi_cabang.sql`, `migrasi_auto_baris_stok_transaksi.sql`, `migrasi_tanggal_manual_transaksi.sql` — penyesuaian transaksi stok untuk multi-cabang.
-   - `transfer_stok.sql`, `migrasi_realtime_transfer.sql`, `pembatalan_transfer.sql`, `migrasi_batal_transfer.sql` — fitur Transfer Stok antar cabang + notifikasi realtime + pembatalan.
-   - `migrasi_bukti_transaksi_stok.sql`, `fix_rls_transaksi_stok_lampiran.sql` — wajib lampiran bukti transaksi.
-   - `migrasi_bukti_penerimaan.sql`, `fix_kunci_bukti_penerimaan.sql` — wajib bukti foto saat konfirmasi terima transfer.
-   - `migrasi_bukti_pengiriman.sql` — wajib bukti foto sebelum barang dikirim saat mencatat transfer (jalankan setelah `migrasi_bukti_penerimaan.sql`, pakai bucket Storage yang sama).
-   - `pembatalan_transaksi.sql` — pembatalan (void) transaksi stok.
-   - `stok_opname.sql`, `migrasi_bukti_opname.sql`, `migrasi_wajib_bukti_opname_selisih.sql` — fitur Stok Opname + bukti foto.
-   - `migrasi_kunci_stok_minimum.sql`, `migrasi_kunci_jumlah_manual.sql` — kunci kolom stok tertentu supaya tidak diubah langsung di luar alur transaksi.
-   - `migrasi_log_aktivitas_barang.sql` — tabel & trigger Log Aktivitas Barang.
-   - `migrasi_superadmin.sql`, `migrasi_perbaikan_peran.sql` — peran `superadmin` dan sumber peran dari `app_metadata`.
-   - `mutasi_detail.sql` — kolom detail tambahan (pencatat, pihak, no. referensi) pada riwayat mutasi.
+2. Buka **SQL Editor** di dashboard project, lalu jalankan file-file di `supabase/` **PERSIS SESUAI URUTAN INI** (masing-masing membangun di atas yang sebelumnya — banyak file men-drop & menulis ulang function dari file sebelumnya, jadi urutan ini bukan sekadar saran):
+   1. `schema.sql` — tabel `produk` dan `stok` + RLS awal.
+   2. `role-policies.sql` — kebijakan akses berbasis peran admin/staf.
+   3. `auth-policies.sql` — memperketat akses supaya hanya user login yang bisa membaca/mengubah data.
+   4. `transaksi_stok.sql` — tabel `transaksi_stok` + trigger otomatis update stok.
+   5. `migrasi_cabang.sql` — dukungan multi-cabang (tabel `cabang`, kolom `cabang_id` di `stok`).
+   6. `migrasi_transaksi_cabang.sql` — kolom `cabang_id` di `transaksi_stok`.
+   7. `transfer_stok.sql`, `migrasi_realtime_transfer.sql` — fitur Transfer Stok antar cabang + notifikasi realtime.
+   8. `mutasi_detail.sql` — kolom detail (pencatat, pihak, no. referensi) + alur Terkirim→Diterima pada transfer. **Wajib di sini** (bukan di akhir) karena banyak file berikutnya butuh function `konfirmasi_terima_transfer` dan kolom `transaksi_stok.dibuat_oleh` dari file ini sudah ada.
+   9. `pembatalan_transaksi.sql` — pembatalan (void) transaksi stok.
+   10. `pembatalan_transfer.sql`, `migrasi_batal_transfer.sql` — pembatalan transfer stok.
+   11. `stok_opname.sql` — fitur Stok Opname (rekonsiliasi fisik).
+   12. `migrasi_kunci_stok_minimum.sql`, `migrasi_kunci_jumlah_manual.sql` — kunci kolom stok tertentu supaya tidak diubah langsung di luar alur transaksi resmi. **Wajib dijalankan di sini, SEBELUM langkah 13–16 di bawah** — file ini sendiri menegaskan harus jalan sebelum `migrasi_bukti_opname.sql`, `migrasi_wajib_bukti_opname_selisih.sql`, dan `migrasi_bukti_penerimaan.sql` (kalau dijalankan setelahnya, function-function itu akan ketiban versi lama yang kehilangan parameter lampiran/foto — lihat catatan di bawah).
+   13. `migrasi_tanggal_manual_transaksi.sql` — izinkan atur tanggal transaksi manual.
+   14. `migrasi_bukti_transaksi_stok.sql`, `fix_rls_transaksi_stok_lampiran.sql` — wajib lampiran bukti transaksi.
+   15. `migrasi_auto_baris_stok_transaksi.sql` — otomatis buat baris stok saat transaksi pertama di suatu cabang.
+   16. `migrasi_bukti_penerimaan.sql`, `fix_kunci_bukti_penerimaan.sql` — wajib bukti foto saat konfirmasi terima transfer.
+   17. `migrasi_bukti_pengiriman.sql` — wajib bukti foto sebelum barang dikirim saat mencatat transfer (pakai bucket Storage yang sama dengan langkah 16).
+   18. `migrasi_bukti_opname.sql`, `migrasi_wajib_bukti_opname_selisih.sql` — bukti foto pada Stok Opname (opsional, wajib kalau ada selisih).
+   19. `migrasi_log_aktivitas_barang.sql` — tabel & trigger Log Aktivitas Barang.
+   20. `migrasi_superadmin.sql`, `migrasi_perbaikan_peran.sql` — peran `superadmin` dan sumber peran dari `app_metadata`.
 
    File `fix_*.sql` adalah perbaikan yang sudah digabung ke migrasi terkait — jalankan untuk kelengkapan histori, tidak wajib dipisah.
+
+   > **Kenapa urutan ini penting?** Setiap file `.sql` di atas punya komentar header yang menyatakan prasyaratnya sendiri (mis. "SETELAH mutasi_detail.sql"). Urutan di atas disusun mengikuti prasyarat tersebut secara konsisten. Versi urutan sebelumnya di README ini menempatkan `migrasi_kunci_jumlah_manual.sql` dan `mutasi_detail.sql` di posisi yang **bertentangan** dengan prasyaratnya sendiri — kalau diikuti apa adanya, fitur Transaksi Stok, Transfer, dan Stok Opname akan gagal total karena RPC yang dipanggil `lib/storage.ts` tidak cocok dengan parameter function yang ada di database ("function does not exist"). Kalau project Anda sudah pernah setup dengan urutan lama dan sekarang mengalami error semacam itu, cukup jalankan ulang file-file di langkah 12 dst. sesuai urutan baru ini (semua file di sini aman dijalankan ulang / idempotent).
 
 3. (Opsional) Jalankan `supabase/seed.sql` dan `supabase/seed_mutasi.sql` untuk mengisi data contoh, biar Dasbor & Daftar Stok langsung terisi.
 

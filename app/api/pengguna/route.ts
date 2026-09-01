@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { peranDariUser, Peran } from "@/lib/role";
-import { usernameKeEmail, emailKeUsername } from "@/lib/username";
+import { usernameKeEmail, emailKeUsername, usernameValid } from "@/lib/username";
 
 // Peran yang boleh diberikan lewat API ini. "superadmin" SENGAJA tidak
 // diizinkan di sini -- lihat catatan di supabase/migrasi_superadmin.sql:
@@ -103,6 +103,19 @@ export async function POST(request: NextRequest) {
   if (!username || username.length < 3) {
     return NextResponse.json(
       { error: "Username minimal 3 karakter." },
+      { status: 400 },
+    );
+  }
+  // Bugfix: tanpa pengecekan ini, username seperti "staf@gudang"
+  // lolos ke usernameKeEmail() dan diam-diam kehilangan karakter "@"
+  // -- akun jadi dibuat dengan username yang beda dari yang diketik
+  // admin, tanpa pemberitahuan apa pun.
+  if (!usernameValid(username)) {
+    return NextResponse.json(
+      {
+        error:
+          "Username hanya boleh berisi huruf, angka, titik, garis bawah, atau strip (tanpa spasi/simbol lain).",
+      },
       { status: 400 },
     );
   }

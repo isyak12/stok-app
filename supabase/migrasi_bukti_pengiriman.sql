@@ -82,6 +82,18 @@ begin
   -- Stok cabang asal berkurang begitu barang dikirim. Stok cabang
   -- tujuan baru bertambah saat dikonfirmasi diterima (lihat
   -- konfirmasi_terima_transfer di migrasi_bukti_penerimaan.sql).
+  --
+  -- PENTING (bugfix): trigger dari migrasi_kunci_jumlah_manual.sql
+  -- mewajibkan flag 'stokku.izinkan_ubah_jumlah' aktif sebelum UPDATE
+  -- stok.jumlah dilakukan di luar RPC transaksi normal. Baris
+  -- `perform set_config` di bawah ini SEBELUMNYA tidak ada di file
+  -- ini -- akibatnya, begitu trigger tersebut aktif, mencatat
+  -- transfer baru SELALU gagal dengan error "Jumlah stok tidak bisa
+  -- diubah manual...", padahal dipanggil dari jalur resmi
+  -- catat_transfer_stok(). Pola ini sudah konsisten dipakai di semua
+  -- function lain yang meng-update stok.jumlah (lihat
+  -- catat_transaksi_stok, konfirmasi_terima_transfer, dst).
+  perform set_config('stokku.izinkan_ubah_jumlah', 'true', true);
   update stok
   set jumlah = jumlah - p_jumlah
   where produk_id = p_produk_id

@@ -70,6 +70,14 @@ begin
         'Foto bukti wajib diunggah kalau ada selisih antara stok fisik dan stok sistem';
     end if;
 
+    -- PENTING (bugfix): sama seperti di catat_transfer_stok
+    -- (migrasi_bukti_pengiriman.sql), baris `perform set_config` ini
+    -- SEBELUMNYA tidak ada di file ini -- akibatnya, begitu trigger
+    -- dari migrasi_kunci_jumlah_manual.sql aktif, mencatat stok
+    -- opname yang ada selisihnya SELALU gagal dengan error "Jumlah
+    -- stok tidak bisa diubah manual...", padahal dipanggil dari
+    -- jalur resmi catat_stok_opname().
+    perform set_config('stokku.izinkan_ubah_jumlah', 'true', true);
     update stok
     set jumlah = p_stok_fisik
     where produk_id = p_produk_id
