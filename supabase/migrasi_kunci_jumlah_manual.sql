@@ -29,20 +29,32 @@
 -- query lain sesudahnya.
 --
 -- Jalankan file ini di Supabase Dashboard > SQL Editor SETELAH
--- semua file berikut sudah ada (migrasi ini menuliskan ULANG versi
--- TERBARU setiap fungsi di bawah, jadi urutan lamanya harus sudah
--- pernah dijalankan lebih dulu):
+-- semua file berikut sudah ada:
 --   schema.sql, transaksi_stok.sql, migrasi_cabang.sql,
 --   migrasi_transaksi_cabang.sql, transfer_stok.sql, mutasi_detail.sql,
 --   pembatalan_transaksi.sql, pembatalan_transfer.sql,
 --   migrasi_batal_transfer.sql, stok_opname.sql
--- Aman dijalankan berkali-kali SELAMA dijalankan sebelum
--- migrasi_bukti_opname.sql, migrasi_wajib_bukti_opname_selisih.sql,
--- dan migrasi_bukti_penerimaan.sql (file-file itu menambah parameter
--- baru ke fungsi yang sama). Kalau file ini dijalankan ULANG setelah
--- ketiganya, versi lawas fungsi bisa hidup lagi sebagai overload --
--- makanya bagian 4 dan 8 di atas sudah ditambah `drop function`
--- untuk mencegah itu.
+--
+-- PENTING (diperbaiki 2026-09): fungsi catat_transfer_stok(),
+-- konfirmasi_terima_transfer(), dan catat_stok_opname() di bawah ini
+-- SEKARANG SUDAH memakai signature TERBARU (termasuk parameter bukti
+-- foto: p_bukti_foto_url_kirim, p_bukti_foto_url, p_lampiran_urls),
+-- sama persis dengan versi final di migrasi_bukti_pengiriman.sql /
+-- migrasi_bukti_penerimaan.sql / migrasi_wajib_bukti_opname_selisih.sql.
+--
+-- Sebelumnya file ini menuliskan ULANG fungsi-fungsi itu pakai
+-- signature LAMA (tanpa bukti foto) -- aman SELAMA dijalankan sebelum
+-- ketiga file di atas, tapi jadi jebakan: kalau file ini tidak
+-- sengaja dijalankan ulang belakangan (mis. saat restore/replay semua
+-- migrasi dari nol tanpa memperhatikan urutan), kewajiban upload
+-- bukti foto transfer/opname bisa diam-diam hilang lagi, atau malah
+-- error "function does not exist" karena frontend memanggil dengan
+-- parameter yang sudah tidak match.
+--
+-- Sekarang file ini AMAN dijalankan ulang kapan saja, urutan apa saja,
+-- selama tabel/kolom terkait (bukti_foto_url_kirim, bukti_foto_url,
+-- stok_opname_lampiran, dst.) sudah ada -- karena isinya sudah versi
+-- final, bukan versi transisi.
 -- ============================================================
 
 -- ------------------------------------------------------------
@@ -138,13 +150,19 @@ end;
 $$;
 
 -- ------------------------------------------------------------
--- 3. catat_transfer_stok() -- versi terbaru dari mutasi_detail.sql
+-- 3. catat_transfer_stok() -- versi FINAL, sama dengan
+--    migrasi_bukti_pengiriman.sql (wajib p_bukti_foto_url_kirim)
 -- ------------------------------------------------------------
+-- Drop dulu versi lama (5 parameter, tanpa bukti foto) supaya tidak
+-- ada overload dua fungsi catat_transfer_stok sekaligus di database.
+drop function if exists catat_transfer_stok(uuid, uuid, uuid, integer, text);
+
 create or replace function catat_transfer_stok(
   p_produk_id uuid,
   p_dari_cabang_id uuid,
   p_ke_cabang_id uuid,
   p_jumlah integer,
+  p_bukti_foto_url_kirim text,
   p_catatan text default null
 )
 returns transfer_stok
@@ -165,6 +183,10 @@ begin
 
   if p_dari_cabang_id = p_ke_cabang_id then
     raise exception 'Cabang asal dan cabang tujuan tidak boleh sama';
+  end if;
+
+  if p_bukti_foto_url_kirim is null or length(trim(p_bukti_foto_url_kirim)) = 0 then
+    raise exception 'Bukti foto sebelum kirim wajib diunggah';
   end if;
 
   select jumlah into v_stok_asal
@@ -191,11 +213,11 @@ begin
 
   insert into transfer_stok (
     produk_id, dari_cabang_id, ke_cabang_id, jumlah, catatan,
-    status, dibuat_oleh, dibuat_oleh_nama
+    status, dibuat_oleh, dibuat_oleh_nama, bukti_foto_url_kirim
   )
   values (
     p_produk_id, p_dari_cabang_id, p_ke_cabang_id, p_jumlah, p_catatan,
-    'terkirim', auth.uid(), auth.email()
+    'terkirim', auth.uid(), auth.email(), p_bukti_foto_url_kirim
   )
   returning * into v_transfer;
 
@@ -203,19 +225,20 @@ begin
 end;
 $$;
 
--- Drop dulu versi lawas yang mungkin sudah ditimpa migrasi setelahnya
--- (migrasi_bukti_penerimaan.sql, versi 3 parameter). Tanpa ini, kalau
--- file ini dijalankan ulang SETELAH migrasi_bukti_penerimaan.sql,
--- akan tercipta 2 fungsi konfirmasi_terima_transfer sekaligus di
--- database (overload) -- salah satunya versi lama yang TIDAK
--- mewajibkan foto bukti penerimaan.
+-- Drop dulu versi lawas konfirmasi_terima_transfer (beda jumlah
+-- parameter) supaya tidak ada overload lama yang TIDAK mewajibkan
+-- foto bukti penerimaan hidup lagi di database.
 drop function if exists konfirmasi_terima_transfer(uuid, text, text);
+drop function if exists konfirmasi_terima_transfer(uuid);
 
 -- ------------------------------------------------------------
--- 4. konfirmasi_terima_transfer() -- versi terbaru dari mutasi_detail.sql
+-- 4. konfirmasi_terima_transfer() -- versi FINAL, sama dengan
+--    migrasi_bukti_penerimaan.sql (wajib p_bukti_foto_url)
 -- ------------------------------------------------------------
 create or replace function konfirmasi_terima_transfer(
-  p_transfer_id uuid
+  p_transfer_id uuid,
+  p_bukti_foto_url text,
+  p_catatan_penerimaan text default null
 )
 returns transfer_stok
 language plpgsql
@@ -226,6 +249,10 @@ declare
   v_stok_minimum_asal integer;
   v_lokasi_asal text;
 begin
+  if p_bukti_foto_url is null or length(trim(p_bukti_foto_url)) = 0 then
+    raise exception 'Bukti foto penerimaan wajib diunggah';
+  end if;
+
   select * into v_transfer
   from transfer_stok
   where id = p_transfer_id
@@ -268,7 +295,9 @@ begin
   set status = 'diterima',
       diterima_oleh = auth.uid(),
       diterima_oleh_nama = auth.email(),
-      diterima_pada = now()
+      diterima_pada = now(),
+      bukti_foto_url = p_bukti_foto_url,
+      catatan_penerimaan = nullif(trim(p_catatan_penerimaan), '')
   where id = p_transfer_id
   returning * into v_transfer;
 
@@ -463,22 +492,23 @@ begin
 end;
 $$;
 
--- Sama seperti di atas: drop dulu versi 6-parameter (dengan
--- p_lampiran_urls) kalau sudah pernah dibuat oleh
--- migrasi_bukti_opname.sql / migrasi_wajib_bukti_opname_selisih.sql --
--- supaya file ini tidak menciptakan overload lama yang melewati
--- validasi wajib-foto-kalau-ada-selisih.
-drop function if exists catat_stok_opname(uuid, uuid, integer, text, text, text[]);
+-- Drop dulu versi lama 5-parameter (tanpa p_lampiran_urls, dari
+-- stok_opname.sql / mutasi_detail.sql) supaya tidak ada overload lama
+-- yang melewati validasi wajib-foto-kalau-ada-selisih.
+drop function if exists catat_stok_opname(uuid, uuid, integer, text, text);
 
 -- ------------------------------------------------------------
--- 8. catat_stok_opname() -- versi terbaru dari stok_opname.sql
+-- 8. catat_stok_opname() -- versi FINAL, sama dengan
+--    migrasi_wajib_bukti_opname_selisih.sql (p_lampiran_urls +
+--    wajib foto kalau ada selisih)
 -- ------------------------------------------------------------
 create or replace function catat_stok_opname(
   p_produk_id uuid,
   p_cabang_id uuid,
   p_stok_fisik integer,
   p_alasan text default null,
-  p_catatan text default null
+  p_catatan text default null,
+  p_lampiran_urls text[] default null
 )
 returns stok_opname
 language plpgsql
@@ -490,6 +520,7 @@ declare
   v_transaksi_id uuid;
   v_opname stok_opname;
   v_catatan_transaksi text;
+  v_url text;
 begin
   if p_stok_fisik is null or p_stok_fisik < 0 then
     raise exception 'Stok fisik harus berupa angka 0 atau lebih';
@@ -511,6 +542,12 @@ begin
     if p_alasan is null or btrim(p_alasan) = '' then
       raise exception
         'Alasan wajib diisi kalau ada selisih antara stok fisik dan stok sistem';
+    end if;
+
+    if p_lampiran_urls is null or array_length(p_lampiran_urls, 1) is null
+       or array_length(p_lampiran_urls, 1) = 0 then
+      raise exception
+        'Foto bukti wajib diunggah kalau ada selisih antara stok fisik dan stok sistem';
     end if;
 
     perform set_config('stokku.izinkan_ubah_jumlah', 'true', true);
@@ -547,6 +584,14 @@ begin
     v_transaksi_id, auth.uid(), auth.email()
   )
   returning * into v_opname;
+
+  if p_lampiran_urls is not null then
+    foreach v_url in array p_lampiran_urls
+    loop
+      insert into stok_opname_lampiran (opname_id, url)
+      values (v_opname.id, v_url);
+    end loop;
+  end if;
 
   return v_opname;
 end;

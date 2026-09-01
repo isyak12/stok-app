@@ -692,7 +692,11 @@ export function useTransferStok(produkId: string) {
       catatan?: string,
     ) => {
       const ekstensi = fotoBuktiKirim.name.split(".").pop() || "jpg";
-      const namaFile = `kirim-${produkId}-${Date.now()}.${ekstensi}`;
+      // Tambah suffix acak (bukan cuma Date.now()) supaya konsisten dengan
+      // pola di lib/lampiran-upload.ts -- mencegah tabrakan nama file kalau
+      // dua upload jatuh di milidetik yang sama (mis. retry cepat setelah
+      // error jaringan).
+      const namaFile = `kirim-${produkId}-${Date.now()}-${Math.random().toString(36).slice(2)}.${ekstensi}`;
 
       const { error: errorUpload } = await supabase.storage
         .from("bukti-transfer")
@@ -741,7 +745,9 @@ export function useTransferStok(produkId: string) {
   const konfirmasiTerima = useCallback(
     async (transferId: string, fotoBukti: File, catatanPenerimaan?: string) => {
       const ekstensi = fotoBukti.name.split(".").pop() || "jpg";
-      const namaFile = `${transferId}-${Date.now()}.${ekstensi}`;
+      // Sama seperti catat() di atas: tambah suffix acak supaya konsisten
+      // dengan lib/lampiran-upload.ts dan aman dari tabrakan nama file.
+      const namaFile = `${transferId}-${Date.now()}-${Math.random().toString(36).slice(2)}.${ekstensi}`;
 
       const { error: errorUpload } = await supabase.storage
         .from("bukti-transfer")
