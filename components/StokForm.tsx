@@ -220,7 +220,7 @@ export default function StokForm({
             disabled={kunciMaster}
             value={form.nama}
             onChange={(e) => ubah("nama", e.target.value)}
-            placeholder="cth. Kabel HDMI 2m"
+            placeholder="cth. CCTV Dahua Indoor 2MP"
             className="input disabled:bg-paper disabled:text-ink/50"
           />
         </Field>
