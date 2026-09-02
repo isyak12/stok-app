@@ -16,11 +16,13 @@ type Props = {
 };
 
 const KATEGORI_UMUM = [
-  "Elektronik",
-  "Alat Tulis",
-  "Sembako",
-  "Perawatan Rumah",
-  "Pakaian",
+  "Perangkat Jaringan",
+  "Modem 4G/GSM",
+  "CCTV",
+  "Kabel/Konektor",
+  "Power Supply/Adaptor",
+  "Aksesoris Instalasi",
+  "Peralatan Kantor",
   "Lainnya",
 ];
 
@@ -143,8 +145,8 @@ export default function StokForm({
       {modeEdit && (
         <p className="text-xs text-ink/50 flex items-center gap-1.5 mb-5">
           <Lock size={12} />
-          Jumlah stok tidak bisa diubah manual oleh siapa pun di sini --
-          gunakan menu Transaksi Stok, Transfer, atau Stok Opname.
+          Jumlah stok tidak bisa diubah manual oleh siapa pun di sini -- gunakan
+          menu Transaksi Stok, Transfer, atau Stok Opname.
         </p>
       )}
       {!kunciMaster && !modeEdit && <div className="mb-6" />}
@@ -235,14 +237,13 @@ export default function StokForm({
           />
           {modeEdit ? (
             <span className="text-xs text-ink/40 block mt-1.5">
-              Tidak bisa diubah di sini. Gunakan menu Transaksi Stok
-              (barang masuk/keluar), Transfer, atau Stok Opname supaya
-              perubahan tercatat di riwayat.
+              Tidak bisa diubah di sini. Gunakan menu Transaksi Stok (barang
+              masuk/keluar), Transfer, atau Stok Opname supaya perubahan
+              tercatat di riwayat.
             </span>
           ) : (
             <span className="text-xs text-ink/40 block mt-1.5">
-              Jumlah stok awal untuk barang baru ini di cabang yang
-              dipilih.
+              Jumlah stok awal untuk barang baru ini di cabang yang dipilih.
             </span>
           )}
         </Field>
