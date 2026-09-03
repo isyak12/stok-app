@@ -17,10 +17,10 @@ type Props = {
 
 const KATEGORI_UMUM = [
   "Perangkat Jaringan",
-  "Modem GSM",
-  "CCTV & Perekam",
-  "Kabel & Konektor",
-  "Power Supply & Adaptor",
+  "Modem 4G/GSM",
+  "CCTV",
+  "Kabel/Konektor",
+  "Power Supply/Adaptor",
   "Aksesoris Instalasi",
   "Peralatan Kantor",
   "Lainnya",
